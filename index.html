@@ -840,9 +840,11 @@ window.saveReserva = async function() {
   if (!document.getElementById('f-nome').value.trim()) {
     showToast('error','⚠','Preenche o nome do cliente'); return;
   }
+  const pc = document.getElementById('f-pc').value.trim();
+  if (!pc) { showToast('error','⚠','Preenche o Nº PC para gerar o link'); return; }
   showSpinner('A guardar…');
   document.getElementById('btn-save').disabled = true;
-  if (!currentId) currentId = uid();
+  if (!currentId) currentId = pc;
   const data = {
     id: currentId,
     createdAt: Date.now(),
@@ -1152,7 +1154,7 @@ window.gerarPDF = function() {
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
-<title>Reserva de Tampo — ${esc(d.cliente?.nome||'')}</title>
+<title>Reserva_Tampo_PC${esc(d.cliente?.pc||'')}_${esc(d.cliente?.nome||'').replace(/ /g,'_')}</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
