@@ -242,6 +242,55 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.6}
   .sh-footer{padding:14px 16px;flex-direction:column;gap:4px}
   .user-pill{display:none}
 }
+
+/* ── PRINT ──────────────────────────────────────────────────── */
+@media print {
+  body { background: #fff !important; color: #111 !important; }
+  .no-print { display: none !important; }
+  #view-login, #view-editor, .spinner-overlay, .toast { display: none !important; }
+  #view-share { display: block !important; background: #fff !important; }
+  .sh-header {
+    background: #fff !important; border-bottom: 1px solid #ddd !important;
+    padding: 14px 24px !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .lm-badge { background: #C4A96A !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .sh-brand-text b { color: #C4A96A !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .sh-brand-text { color: #555 !important; }
+  .sh-ref b { color: #C4A96A !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .sh-body { padding: 20px 24px 40px !important; max-width: 100% !important; }
+  .sh-client-strip {
+    border: 1px solid #ddd !important; border-radius: 6px !important;
+    display: flex !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .sh-cell { border-right: 1px solid #ddd !important; padding: 10px 16px !important; }
+  .sh-cell-label { color: #888 !important; }
+  .sh-cell-val { color: #111 !important; }
+  .sh-cell-val.gold { color: #C4A96A !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .sh-section {
+    color: #C4A96A !important; font-size: 8px !important; letter-spacing: 2px !important;
+    margin: 16px 0 10px !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .sh-section::after { background: #ddd !important; }
+  .sh-img-wrap { border: 1px solid #ddd !important; margin-bottom: 20px !important; page-break-inside: avoid; }
+  .sh-hotspot, .sh-tooltip { display: none !important; }
+  .sh-item {
+    background: #f9f9f9 !important; border: 1px solid #eee !important;
+    padding: 10px 14px !important; margin-bottom: 4px !important;
+    page-break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .sh-item-num { color: #C4A96A !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .sh-item-text { color: #111 !important; }
+  .sh-item-text small { color: #666 !important; }
+  .sh-notes {
+    background: #f9f9f9 !important; border: 1px solid #eee !important;
+    color: #555 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .sh-footer {
+    border-top: 1px solid #ddd !important; color: #888 !important;
+    padding: 12px 24px !important; font-size: 9px !important;
+  }
+  .sh-footer b { color: #C4A96A !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
 </style>
 </head>
 <body>
@@ -302,8 +351,8 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.6}
             <input class="form-input" id="f-nome" type="text" placeholder="Sr. João Silva" oninput="markDirty()">
           </div>
           <div class="form-group">
-            <label class="form-label">Nº Cliente</label>
-            <input class="form-input" id="f-num" type="text" placeholder="91785871" oninput="markDirty()">
+            <label class="form-label">Nº PC</label>
+            <input class="form-input" id="f-pc" type="text" placeholder="200052" oninput="markDirty()">
           </div>
           <div class="form-group">
             <label class="form-label">Contacto</label>
@@ -436,10 +485,13 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.6}
       <div class="lm-badge">LM</div>
       <div class="sh-brand-text">
         <b>Leroy Merlin Viseu — Loja 43</b>
-        Reserva de Tampo em Granito
+        Reserva de Tampo
       </div>
     </div>
-    <div class="sh-ref" id="sh-ref-num"></div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="sh-ref" id="sh-ref-num"></div>
+      <button class="btn btn-ghost btn-sm no-print" onclick="gerarPDF()" style="border-color:rgba(196,169,106,0.3);color:var(--gold)">⬇ PDF</button>
+    </div>
   </header>
   <div class="sh-body">
     <div class="sh-client-strip" id="sh-client-strip"></div>
@@ -753,7 +805,7 @@ window.saveReserva = async function() {
     createdAt: Date.now(),
     cliente: {
       nome:   document.getElementById('f-nome').value.trim(),
-      num:    document.getElementById('f-num').value.trim(),
+      pc:     document.getElementById('f-pc').value.trim(),
       tel:    document.getElementById('f-tel').value.trim(),
       email:  document.getElementById('f-email').value.trim(),
       morada: document.getElementById('f-morada').value.trim(),
@@ -799,7 +851,7 @@ window.newReserva = function() {
   if (isDirty && !confirm('Tens alterações por guardar. Continuar?')) return;
   currentId = null; isDirty = false; hotspots = []; selectedHsId = null;
   imageDataUrl = null;
-  ['f-nome','f-num','f-tel','f-email','f-morada','f-material','f-acabamento','f-espessura','f-notas']
+  ['f-nome','f-num','f-pc','f-tel','f-email','f-morada','f-material','f-acabamento','f-espessura','f-notas']
     .forEach(id => document.getElementById(id).value = '');
   removeImage(null);
   items = defaultItems();
@@ -827,7 +879,7 @@ window.showSaved = async function() {
       div.innerHTML = `
         <div class="saved-item-info" onclick="loadReserva('${d.id}')">
           <div class="saved-item-name">${esc(d.cliente?.nome||'—')}</div>
-          <div class="saved-item-meta">${esc(d.material?.nome||'')} · ${date}</div>
+          <div class="saved-item-meta">${esc(d.material?.nome||'')} · PC ${esc(d.cliente?.pc||'—')} · ${date}</div>
         </div>
         <div class="saved-item-actions">
           <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();copyLink('${d.id}')">Copiar link</button>
@@ -850,6 +902,7 @@ window.loadReserva = async function(id) {
     currentId = id; isDirty = false;
     document.getElementById('f-nome').value    = d.cliente?.nome    || '';
     document.getElementById('f-num').value     = d.cliente?.num     || '';
+    document.getElementById('f-pc').value      = d.cliente?.pc      || '';
     document.getElementById('f-tel').value     = d.cliente?.tel     || '';
     document.getElementById('f-email').value   = d.cliente?.email   || '';
     document.getElementById('f-morada').value  = d.cliente?.morada  || '';
@@ -898,13 +951,16 @@ async function loadShareView(id) {
 
 function renderShareView(d) {
   document.getElementById('sh-ref-num').innerHTML =
-    d.cliente?.num ? `Cliente <b>${esc(d.cliente.num)}</b>` : '';
+    [d.cliente?.num && `Cliente <b>${esc(d.cliente.num)}</b>`,
+     d.cliente?.pc  && `PC <b>${esc(d.cliente.pc)}</b>`]
+    .filter(Boolean).join(' · ') || '';
 
   const cells = [
-    {label:'Cliente',   val: d.cliente?.nome || '—',  gold: false},
-    {label:'Contacto',  val: d.cliente?.tel  || '—',  gold: false},
-    {label:'Material',  val: d.material?.nome || '—', gold: true},
-    {label:'Espessura', val: [d.material?.espessura, d.material?.acabamento].filter(Boolean).join(' · ') || '—', gold: false},
+    {label:'Cliente',    val: d.cliente?.nome || '—',  gold: false},
+    {label:'Nº Cliente', val: d.cliente?.num  || '—',  gold: false},
+    {label:'Nº PC',      val: d.cliente?.pc   || '—',  gold: false},
+    {label:'Material',   val: d.material?.nome || '—', gold: true},
+    {label:'Espessura',  val: [d.material?.espessura, d.material?.acabamento].filter(Boolean).join(' · ') || '—', gold: false},
   ];
   document.getElementById('sh-client-strip').innerHTML = cells.map(c =>
     `<div class="sh-cell"><span class="sh-cell-label">${c.label}</span>
@@ -936,7 +992,11 @@ function renderShareView(d) {
   }
 
   document.getElementById('sh-footer-ref').innerHTML =
-    d.cliente?.nome ? `Cliente <b>${esc(d.cliente.num||'')}</b> · ${esc(d.cliente.nome)}` : '';
+    d.cliente?.nome
+      ? [d.cliente?.num && `Cliente <b>${esc(d.cliente.num)}</b>`,
+         d.cliente?.pc  && `PC <b>${esc(d.cliente.pc)}</b>`,
+         esc(d.cliente.nome)].filter(Boolean).join(' · ')
+      : '';
 }
 
 function renderShareHotspots(hs, wrap) {
@@ -1011,6 +1071,12 @@ function esc(s) {
   if (!s) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+/* ── PDF / Print ─────────────────────────────────────────── */
+window.gerarPDF = function() {
+  window.print();
+};
+
 </script>
 </body>
 </html>
