@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HM Tampos LM</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ─── RESET & VARS ─────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#C4A96A;
+  --gold-dim:rgba(196,169,106,0.15);
+  --dark:#0d0d0d;
+  --dark-2:#161616;
+  --dark-3:#1e1e1e;
+  --dark-4:#272727;
+  --text:#e6e2da;
+  --text-2:#a09a91;
+  --text-3:#5c5750;
+  --border:rgba(196,169,106,0.18);
+  --border-soft:rgba(255,255,255,0.06);
+  --radius:8px;
+  --transition:0.2s ease;
+}
+html{scroll-behavior:smooth}
+body{background:var(--dark);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;line-height:1.5}
+input,textarea,select{font-family:inherit}
+button{font-family:inherit;cursor:pointer}
+a{color:inherit;text-decoration:none}
+
+/* ─── UTILITIES ─────────────────────────────────────────────── */
+.mono{font-family:'DM Mono',monospace}
+.gold{color:var(--gold)}
+.muted{color:var(--text-2)}
+.hidden{display:none!important}
+
+/* ─── VIEWS ─────────────────────────────────────────────────── */
+#view-editor,#view-share{min-height:100vh}
+
+/* ═══════════════════════════════════════════════════════════════
+   EDITOR
+═══════════════════════════════════════════════════════════════ */
+
+/* Header */
+.ed-header{
+  background:var(--dark-2);
+  border-bottom:1px solid var(--border);
+  padding:0 32px;
+  height:56px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+}
+.ed-brand{display:flex;align-items:center;gap:12px}
+.lm-badge{
+  width:32px;height:32px;background:var(--gold);border-radius:4px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'DM Mono',monospace;font-size:10px;font-weight:500;color:var(--dark);flex-shrink:0;
+}
+.ed-brand-label{font-size:13px;font-weight:500;color:var(--text)}
+.ed-brand-sub{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-2)}
+.ed-actions{display:flex;gap:8px;align-items:center}
+
+/* Buttons */
+.btn{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:8px 16px;border-radius:5px;font-size:13px;font-weight:500;
+  border:none;transition:var(--transition);
+}
+.btn-primary{background:var(--gold);color:var(--dark)}
+.btn-primary:hover{background:#d4b97a}
+.btn-primary:disabled{opacity:0.45;pointer-events:none}
+.btn-ghost{background:transparent;color:var(--text-2);border:1px solid var(--border-soft)}
+.btn-ghost:hover{color:var(--text);border-color:var(--border)}
+.btn-danger{background:transparent;color:#e05555;border:1px solid rgba(224,85,85,0.25)}
+.btn-danger:hover{background:rgba(224,85,85,0.1)}
+.btn-sm{padding:5px 11px;font-size:12px}
+.btn-icon{width:32px;height:32px;padding:0;justify-content:center;border-radius:5px;background:transparent;border:1px solid var(--border-soft);color:var(--text-2)}
+.btn-icon:hover{border-color:var(--border);color:var(--text)}
+
+/* Layout */
+.ed-body{max-width:920px;margin:0 auto;padding:32px 24px 80px}
+
+/* Section */
+.ed-section{margin-bottom:36px}
+.ed-section-title{
+  font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;
+  text-transform:uppercase;color:var(--gold);
+  margin-bottom:16px;display:flex;align-items:center;gap:10px;
+}
+.ed-section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* Card */
+.ed-card{
+  background:var(--dark-3);border:1px solid var(--border-soft);
+  border-radius:var(--radius);padding:20px 24px;
+}
+
+/* Form grid */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-grid.cols-3{grid-template-columns:1fr 1fr 1fr}
+.form-span-2{grid-column:span 2}
+.form-span-3{grid-column:span 3}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-2)}
+.form-input{
+  background:var(--dark-4);border:1px solid var(--border-soft);
+  border-radius:5px;padding:9px 12px;font-size:14px;color:var(--text);
+  transition:var(--transition);
+}
+.form-input:focus{outline:none;border-color:var(--gold);background:var(--dark-3)}
+.form-input::placeholder{color:var(--text-3)}
+textarea.form-input{resize:vertical;min-height:80px;line-height:1.6}
+
+/* Image upload zone */
+.img-upload-zone{
+  border:1.5px dashed var(--border);border-radius:var(--radius);
+  background:var(--dark-4);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:10px;padding:32px;cursor:pointer;transition:var(--transition);
+  min-height:160px;position:relative;overflow:hidden;
+}
+.img-upload-zone:hover{border-color:var(--gold);background:var(--dark-3)}
+.img-upload-zone.has-image{padding:0;cursor:default;min-height:auto}
+.img-upload-zone.drag-over{border-color:var(--gold);background:var(--gold-dim)}
+.img-upload-zone img{width:100%;display:block;border-radius:calc(var(--radius) - 2px)}
+.img-upload-icon{font-size:28px;opacity:0.4}
+.img-upload-text{font-size:13px;color:var(--text-2);text-align:center}
+.img-upload-text small{display:block;font-size:11px;color:var(--text-3);margin-top:3px}
+.img-remove-btn{
+  position:absolute;top:10px;right:10px;
+  background:rgba(0,0,0,0.7);border:1px solid var(--border);
+  color:var(--text-2);border-radius:4px;padding:4px 9px;font-size:11px;
+  cursor:pointer;transition:var(--transition);z-index:5;
+}
+.img-remove-btn:hover{color:#e05555;border-color:rgba(224,85,85,0.4)}
+.img-size-badge{
+  position:absolute;bottom:10px;right:10px;
+  background:rgba(0,0,0,0.7);border:1px solid var(--border);
+  font-family:'DM Mono',monospace;font-size:10px;color:var(--text-2);
+  padding:3px 8px;border-radius:3px;
+}
+
+/* Hotspot editor */
+.hotspot-canvas-wrap{
+  position:relative;border-radius:var(--radius);overflow:hidden;
+  border:1px solid var(--border-soft);
+}
+.hotspot-canvas-wrap img{width:100%;display:block;user-select:none;pointer-events:none}
+.hotspot-canvas-wrap.placing{cursor:crosshair}
+.hotspot-canvas-wrap.placing img{opacity:0.85}
+.hs-pin{
+  position:absolute;width:30px;height:30px;
+  border-radius:50%;background:rgba(196,169,106,0.2);border:2px solid var(--gold);
+  transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;
+  font-family:'DM Mono',monospace;font-size:11px;font-weight:500;color:var(--gold);
+  cursor:pointer;transition:var(--transition);
+  animation:hsPulse 2.5s infinite;
+}
+.hs-pin:hover,.hs-pin.selected{background:rgba(196,169,106,0.4);animation:none;box-shadow:0 0 0 6px rgba(196,169,106,0.1)}
+.hs-pin.selected{border-color:#fff}
+@keyframes hsPulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(196,169,106,0.3)}
+  50%{box-shadow:0 0 0 8px rgba(196,169,106,0)}
+}
+.hs-place-hint{
+  font-size:12px;color:var(--text-2);
+  display:flex;align-items:center;gap:6px;margin-bottom:10px;
+}
+.hs-place-hint .hint-icon{color:var(--gold)}
+.hs-controls{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+
+/* Hotspot list */
+.hs-list{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.hs-item{
+  background:var(--dark-4);border:1px solid var(--border-soft);
+  border-radius:var(--radius);padding:14px 16px;
+  display:grid;grid-template-columns:28px 1fr auto;gap:12px;align-items:start;
+}
+.hs-item.selected-item{border-color:var(--gold)}
+.hs-item-num{
+  width:24px;height:24px;border-radius:50%;
+  background:var(--gold-dim);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'DM Mono',monospace;font-size:10px;color:var(--gold);
+  flex-shrink:0;margin-top:2px;
+}
+.hs-item-fields{display:flex;flex-direction:column;gap:8px}
+.hs-item-actions{display:flex;flex-direction:column;gap:6px;padding-top:2px}
+
+/* Items list (materiais) */
+.items-list{display:flex;flex-direction:column;gap:8px}
+.item-row{
+  background:var(--dark-4);border:1px solid var(--border-soft);
+  border-radius:var(--radius);padding:14px 16px;
+  display:grid;grid-template-columns:28px 1fr auto;gap:12px;align-items:center;
+}
+.item-row-num{
+  width:24px;height:24px;border-radius:50%;
+  background:var(--gold-dim);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'DM Mono',monospace;font-size:10px;color:var(--gold);flex-shrink:0;
+}
+.add-row-btn{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 16px;border-radius:var(--radius);
+  border:1.5px dashed var(--border);background:transparent;
+  color:var(--text-2);font-size:13px;cursor:pointer;transition:var(--transition);
+  width:100%;margin-top:8px;
+}
+.add-row-btn:hover{border-color:var(--gold);color:var(--gold)}
+
+/* Toast */
+.toast{
+  position:fixed;bottom:24px;right:24px;
+  background:var(--dark-3);border:1px solid var(--border);
+  border-radius:var(--radius);padding:12px 18px;
+  font-size:13px;display:flex;align-items:center;gap:8px;
+  box-shadow:0 8px 32px rgba(0,0,0,0.5);
+  transform:translateY(80px);opacity:0;
+  transition:transform 0.3s ease, opacity 0.3s ease;
+  z-index:999;pointer-events:none;
+}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success .toast-icon{color:#6fcf97}
+.toast.error .toast-icon{color:#e05555}
+.toast.loading .toast-icon{color:var(--gold);animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Spinner overlay */
+.spinner-overlay{
+  position:fixed;inset:0;background:rgba(13,13,13,0.7);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:16px;z-index:200;
+}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite}
+.spinner-label{font-family:'DM Mono',monospace;font-size:12px;color:var(--text-2);letter-spacing:1px}
+
+/* Saved list */
+.saved-list{display:flex;flex-direction:column;gap:8px}
+.saved-item{
+  background:var(--dark-4);border:1px solid var(--border-soft);
+  border-radius:var(--radius);padding:14px 18px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  cursor:pointer;transition:var(--transition);
+}
+.saved-item:hover{border-color:var(--border);background:var(--dark-3)}
+.saved-item-info{display:flex;flex-direction:column;gap:3px}
+.saved-item-name{font-size:14px;font-weight:500}
+.saved-item-meta{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-2)}
+.saved-item-actions{display:flex;gap:6px;flex-shrink:0}
+.empty-state{
+  padding:40px;text-align:center;
+  color:var(--text-3);font-size:13px;
+  border:1px dashed var(--border);border-radius:var(--radius);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SHARE VIEW
+═══════════════════════════════════════════════════════════════ */
+#view-share{background:var(--dark)}
+
+.sh-header{
+  background:var(--dark-2);border-bottom:1px solid var(--border);
+  padding:18px 40px;display:flex;align-items:center;justify-content:space-between;
+}
+.sh-brand{display:flex;align-items:center;gap:12px}
+.sh-brand-text{font-size:12px;color:var(--text-2);font-family:'DM Mono',monospace;letter-spacing:1px}
+.sh-brand-text b{display:block;font-size:13px;color:var(--gold);font-family:'DM Sans',sans-serif;letter-spacing:0;font-weight:500}
+.sh-ref{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-2);text-align:right}
+.sh-ref b{color:var(--gold);font-size:14px}
+
+.sh-body{max-width:840px;margin:0 auto;padding:36px 24px 60px}
+
+/* Client strip */
+.sh-client-strip{
+  display:flex;border:1px solid var(--border);border-radius:var(--radius);
+  overflow:hidden;margin-bottom:32px;
+}
+.sh-cell{flex:1;padding:14px 20px;border-right:1px solid var(--border)}
+.sh-cell:last-child{border-right:none}
+.sh-cell-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-2);display:block;margin-bottom:5px}
+.sh-cell-val{font-size:14px;font-weight:500}
+.sh-cell-val.gold{color:var(--gold)}
+
+/* Section label */
+.sh-section{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.sh-section::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* Kitchen image with hotspots */
+.sh-img-wrap{position:relative;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);margin-bottom:32px}
+.sh-img-wrap img{width:100%;display:block;user-select:none}
+.sh-hotspot{
+  position:absolute;width:32px;height:32px;border-radius:50%;
+  background:rgba(196,169,106,0.2);border:2px solid var(--gold);
+  transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;
+  font-family:'DM Mono',monospace;font-size:11px;color:var(--gold);
+  cursor:pointer;transition:var(--transition);animation:hsPulse 2.5s infinite;
+}
+.sh-hotspot:hover,.sh-hotspot.active{background:rgba(196,169,106,0.4);animation:none;box-shadow:0 0 0 8px rgba(196,169,106,0.12)}
+
+/* Tooltip */
+.sh-tooltip{
+  position:absolute;background:var(--dark-2);border:1px solid var(--gold);
+  border-radius:var(--radius);padding:14px 16px;width:260px;
+  z-index:50;opacity:0;pointer-events:none;transition:opacity 0.2s ease;
+  box-shadow:0 8px 32px rgba(0,0,0,0.6);
+}
+.sh-tooltip.visible{opacity:1;pointer-events:auto}
+.sh-tooltip-title{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:7px}
+.sh-tooltip-desc{font-size:13px;color:var(--text);line-height:1.5;margin-bottom:10px}
+.sh-tooltip-link{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--gold);border:1px solid var(--border);border-radius:4px;padding:5px 10px;transition:var(--transition)}
+.sh-tooltip-link:hover{background:var(--gold-dim)}
+.sh-tooltip-close{position:absolute;top:8px;right:10px;background:none;border:none;color:var(--text-2);font-size:16px;cursor:pointer;line-height:1;padding:2px 5px}
+.sh-tooltip-close:hover{color:var(--text)}
+
+/* Items list share */
+.sh-items{display:flex;flex-direction:column;gap:8px;margin-bottom:32px}
+.sh-item{display:flex;align-items:baseline;gap:14px;padding:13px 18px;background:var(--dark-3);border:1px solid var(--border-soft);border-radius:var(--radius)}
+.sh-item-num{font-family:'DM Mono',monospace;font-size:11px;color:var(--gold);flex-shrink:0;width:22px}
+.sh-item-text{font-size:14px;color:var(--text);flex:1;line-height:1.4}
+.sh-item-text small{display:block;font-size:12px;color:var(--text-2);margin-top:3px}
+
+/* Notes */
+.sh-notes{background:var(--dark-3);border:1px solid var(--border-soft);border-radius:var(--radius);padding:18px 20px;font-size:14px;line-height:1.7;color:var(--text-2);white-space:pre-wrap}
+
+.sh-footer{border-top:1px solid var(--border);padding:16px 40px;display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:10px;color:var(--text-3)}
+.sh-footer b{color:var(--gold)}
+
+/* ─── RESPONSIVE ─────────────────────────────────────────────── */
+@media(max-width:600px){
+  .ed-header{padding:0 16px}
+  .ed-body{padding:20px 16px 60px}
+  .form-grid{grid-template-columns:1fr}
+  .form-grid.cols-3{grid-template-columns:1fr}
+  .form-span-2,.form-span-3{grid-column:span 1}
+  .sh-header{padding:14px 16px;flex-direction:column;gap:10px;align-items:flex-start}
+  .sh-body{padding:24px 16px 40px}
+  .sh-client-strip{flex-direction:column}
+  .sh-cell{border-right:none;border-bottom:1px solid var(--border)}
+  .sh-cell:last-child{border-bottom:none}
+  .sh-footer{padding:14px 16px;flex-direction:column;gap:4px}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ EDITOR VIEW ═══════════════════════════════════════════ -->
+<div id="view-editor">
+
+  <header class="ed-header">
+    <div class="ed-brand">
+      <div class="lm-badge">LM</div>
+      <div>
+        <div class="ed-brand-label">HM Tampos LM</div>
+        <div class="ed-brand-sub mono">Leroy Merlin Viseu · Loja 43</div>
+      </div>
+    </div>
+    <div class="ed-actions">
+      <button class="btn btn-ghost btn-sm" onclick="newReserva()">+ Nova</button>
+      <button class="btn btn-ghost btn-sm" onclick="showSaved()">Guardadas</button>
+      <button class="btn btn-primary" id="btn-save" onclick="saveReserva()" disabled>
+        <span>💾</span> Guardar
+      </button>
+    </div>
+  </header>
+
+  <div class="ed-body">
+
+    <!-- CLIENT -->
+    <div class="ed-section">
+      <div class="ed-section-title">Dados do cliente</div>
+      <div class="ed-card">
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Nome</label>
+            <input class="form-input" id="f-nome" type="text" placeholder="Sr. João Silva" oninput="markDirty()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nº Cliente</label>
+            <input class="form-input" id="f-num" type="text" placeholder="91785871" oninput="markDirty()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Contacto</label>
+            <input class="form-input" id="f-tel" type="text" placeholder="9XX XXX XXX" oninput="markDirty()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input class="form-input" id="f-email" type="email" placeholder="email@exemplo.com" oninput="markDirty()">
+          </div>
+          <div class="form-group form-span-2">
+            <label class="form-label">Morada</label>
+            <input class="form-input" id="f-morada" type="text" placeholder="Rua, nº, localidade" oninput="markDirty()">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MATERIAL -->
+    <div class="ed-section">
+      <div class="ed-section-title">Material & especificação</div>
+      <div class="ed-card">
+        <div class="form-grid cols-3">
+          <div class="form-group">
+            <label class="form-label">Material</label>
+            <input class="form-input" id="f-material" type="text" placeholder="Granito Negro Zimbabwe" oninput="markDirty()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Acabamento</label>
+            <input class="form-input" id="f-acabamento" type="text" placeholder="Patas de Gato" oninput="markDirty()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Espessura</label>
+            <input class="form-input" id="f-espessura" type="text" placeholder="2 cm" oninput="markDirty()">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- IMAGE -->
+    <div class="ed-section">
+      <div class="ed-section-title">Imagem da cozinha</div>
+      <div class="ed-card" style="padding:16px">
+        <div class="img-upload-zone" id="upload-zone" onclick="triggerUpload()" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+          <input type="file" id="file-input" accept="image/*" style="display:none" onchange="handleFile(event)">
+          <div id="upload-placeholder">
+            <div class="img-upload-icon">🖼️</div>
+            <div class="img-upload-text">
+              Clique ou arraste a imagem aqui
+              <small>JPG, PNG · Será comprimida para ≤ 150 KB</small>
+            </div>
+          </div>
+          <img id="upload-preview" style="display:none" alt="Pré-visualização">
+          <button class="img-remove-btn hidden" id="img-remove-btn" onclick="removeImage(event)">✕ Remover</button>
+          <div class="img-size-badge hidden" id="img-size-badge"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HOTSPOTS -->
+    <div class="ed-section" id="hotspot-section" style="display:none">
+      <div class="ed-section-title">Hotspots na imagem</div>
+      <div class="ed-card" style="padding:16px">
+        <div class="hs-place-hint">
+          <span class="hint-icon">👆</span>
+          <span id="hs-hint-text">Clique em "Adicionar ponto" e depois clique na imagem para posicionar</span>
+        </div>
+        <div class="hs-controls">
+          <button class="btn btn-ghost btn-sm" id="btn-add-hs" onclick="startPlacing()">+ Adicionar ponto</button>
+          <button class="btn btn-ghost btn-sm hidden" id="btn-cancel-hs" onclick="cancelPlacing()">Cancelar</button>
+        </div>
+        <div class="hotspot-canvas-wrap" id="hs-canvas">
+          <img id="hs-image" alt="Cozinha" style="pointer-events:auto" onclick="handleCanvasClick(event)">
+        </div>
+        <div class="hs-list" id="hs-list"></div>
+      </div>
+    </div>
+
+    <!-- ITEMS -->
+    <div class="ed-section">
+      <div class="ed-section-title">Trabalhos a considerar</div>
+      <div class="ed-card" style="padding:16px">
+        <div class="items-list" id="items-list"></div>
+        <button class="add-row-btn" onclick="addItem()">+ Adicionar item</button>
+      </div>
+    </div>
+
+    <!-- NOTES -->
+    <div class="ed-section">
+      <div class="ed-section-title">Notas para o marmorista</div>
+      <div class="ed-card" style="padding:16px">
+        <textarea class="form-input" id="f-notas" placeholder="Observações, condições de acesso, datas…" oninput="markDirty()"></textarea>
+      </div>
+    </div>
+
+    <!-- LINK -->
+    <div class="ed-section hidden" id="share-section">
+      <div class="ed-section-title">Link para partilha</div>
+      <div class="ed-card">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <input class="form-input" id="share-url" type="text" readonly style="flex:1;font-family:'DM Mono',monospace;font-size:12px;cursor:pointer" onclick="copyShareLink()">
+          <button class="btn btn-primary" onclick="copyShareLink()">Copiar link</button>
+          <button class="btn btn-ghost" onclick="openShareLink()">Abrir</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /ed-body -->
+
+  <!-- Saved modal -->
+  <div id="saved-modal" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:150;display:flex;align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--dark-3);border:1px solid var(--border);border-radius:10px;width:100%;max-width:560px;max-height:80vh;overflow-y:auto">
+      <div style="padding:20px 24px;border-bottom:1px solid var(--border-soft);display:flex;justify-content:space-between;align-items:center">
+        <span style="font-weight:500">Reservas guardadas</span>
+        <button class="btn-icon btn" onclick="hideSaved()">✕</button>
+      </div>
+      <div style="padding:20px 24px">
+        <div class="saved-list" id="saved-list">
+          <div class="empty-state">A carregar…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /view-editor -->
+
+<!-- ═══ SHARE VIEW ════════════════════════════════════════════ -->
+<div id="view-share" class="hidden">
+
+  <header class="sh-header">
+    <div class="sh-brand">
+      <div class="lm-badge">LM</div>
+      <div class="sh-brand-text">
+        <b>Leroy Merlin Viseu — Loja 43</b>
+        Reserva de Tampo em Granito
+      </div>
+    </div>
+    <div class="sh-ref mono" id="sh-ref-num"></div>
+  </header>
+
+  <div class="sh-body">
+    <div class="sh-client-strip" id="sh-client-strip"></div>
+
+    <div class="sh-section" id="sh-img-label" style="display:none">Cozinha — clique nos pontos</div>
+    <div class="sh-img-wrap hidden" id="sh-img-wrap">
+      <img id="sh-img" alt="">
+    </div>
+
+    <div class="sh-section">Trabalhos a considerar</div>
+    <div class="sh-items" id="sh-items"></div>
+
+    <div id="sh-notes-wrap" class="hidden">
+      <div class="sh-section">Notas para o marmorista</div>
+      <div class="sh-notes" id="sh-notes"></div>
+    </div>
+  </div>
+
+  <footer class="sh-footer">
+    <span>Leroy Merlin Viseu · Loja 43 · <b>VPR Hélder Melo</b></span>
+    <span id="sh-footer-ref"></span>
+  </footer>
+
+</div><!-- /view-share -->
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <span class="toast-icon" id="toast-icon"></span>
+  <span id="toast-msg"></span>
+</div>
+
+<!-- Spinner -->
+<div class="spinner-overlay hidden" id="spinner">
+  <div class="spinner"></div>
+  <div class="spinner-label" id="spinner-label">A guardar…</div>
+</div>
+
+<!-- ═══ FIREBASE + APP LOGIC ══════════════════════════════════ -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, orderBy, query }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+/* ─── Firebase init ─────────────────────────────────────── */
+const firebaseConfig = {
+  apiKey: "AIzaSyB-mpGVE8qgmwT4OaeNa-W47hctXJLhH2A",
+  authDomain: "hm-tampos-lm.firebaseapp.com",
+  projectId: "hm-tampos-lm",
+  storageBucket: "hm-tampos-lm.firebasestorage.app",
+  messagingSenderId: "988731163153",
+  appId: "1:988731163153:web:f4d5789e9f513ef68767b0"
+};
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+
+/* ─── State ─────────────────────────────────────────────── */
+let currentId = null;
+let isDirty = false;
+let isPlacing = false;
+let hotspots = [];   // [{id, x, y, title, desc, link}]
+let items = [];       // [{id, text, note}]
+let imageDataUrl = null;
+let selectedHsId = null;
+let activeTooltip = null;
+
+/* ─── Router ─────────────────────────────────────────────── */
+function router() {
+  const params = new URLSearchParams(location.search);
+  const id = params.get('id');
+  if (id) {
+    document.getElementById('view-editor').classList.add('hidden');
+    document.getElementById('view-share').classList.remove('hidden');
+    loadShareView(id);
+  } else {
+    initEditor();
+  }
+}
+
+/* ─── Editor init ─────────────────────────────────────────── */
+function initEditor() {
+  // Default items
+  items = [
+    {id: uid(), text: 'Tampo em granito', note: ''},
+    {id: uid(), text: 'Rodatampo em granito', note: ''},
+    {id: uid(), text: 'Transporte e montagem', note: ''},
+    {id: uid(), text: 'Rebaixo a face lava-loiça', note: ''},
+    {id: uid(), text: 'Corte bruto — placa', note: ''},
+  ];
+  renderItems();
+}
+
+/* ─── Dirty flag ─────────────────────────────────────────── */
+window.markDirty = function() {
+  isDirty = true;
+  document.getElementById('btn-save').disabled = false;
+};
+
+/* ─── UID ─────────────────────────────────────────────────── */
+function uid() {
+  return Math.random().toString(36).slice(2, 10);
+}
+
+/* ─── Image handling ──────────────────────────────────────── */
+window.triggerUpload = function() {
+  if (imageDataUrl) return;
+  document.getElementById('file-input').click();
+};
+
+window.handleDrop = function(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) processImage(file);
+};
+
+window.handleDragOver = function(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.add('drag-over');
+};
+
+window.handleDragLeave = function() {
+  document.getElementById('upload-zone').classList.remove('drag-over');
+};
+
+window.handleFile = function(e) {
+  const file = e.target.files[0];
+  if (file) processImage(file);
+};
+
+function processImage(file) {
+  showSpinner('A comprimir imagem…');
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    compressImage(e.target.result, 150 * 1024, (compressed, sizeKb) => {
+      hideSpinner();
+      imageDataUrl = compressed;
+      showImagePreview(compressed, sizeKb);
+      document.getElementById('hotspot-section').style.display = '';
+      document.getElementById('hs-image').src = compressed;
+      markDirty();
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+function compressImage(dataUrl, maxBytes, callback) {
+  const img = new Image();
+  img.onload = () => {
+    let w = img.width, h = img.height;
+    // Scale down if needed
+    const MAX_DIM = 1200;
+    if (w > MAX_DIM || h > MAX_DIM) {
+      const ratio = Math.min(MAX_DIM/w, MAX_DIM/h);
+      w = Math.round(w * ratio);
+      h = Math.round(h * ratio);
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+    // Binary search quality
+    let lo = 0.3, hi = 0.92, result = '', quality = 0.75;
+    for (let i = 0; i < 8; i++) {
+      quality = (lo + hi) / 2;
+      result = canvas.toDataURL('image/jpeg', quality);
+      const bytes = Math.round((result.length - 22) * 3 / 4);
+      if (bytes > maxBytes) hi = quality;
+      else lo = quality;
+    }
+    const finalBytes = Math.round((result.length - 22) * 3 / 4);
+    callback(result, Math.round(finalBytes / 1024));
+  };
+  img.src = dataUrl;
+}
+
+function showImagePreview(dataUrl, sizeKb) {
+  const zone = document.getElementById('upload-zone');
+  zone.classList.add('has-image');
+  document.getElementById('upload-placeholder').style.display = 'none';
+  const preview = document.getElementById('upload-preview');
+  preview.src = dataUrl;
+  preview.style.display = 'block';
+  document.getElementById('img-remove-btn').classList.remove('hidden');
+  if (sizeKb) {
+    const badge = document.getElementById('img-size-badge');
+    badge.textContent = sizeKb + ' KB';
+    badge.classList.remove('hidden');
+  }
+  zone.onclick = null;
+}
+
+window.removeImage = function(e) {
+  e.stopPropagation();
+  imageDataUrl = null;
+  hotspots = [];
+  selectedHsId = null;
+  document.getElementById('upload-zone').classList.remove('has-image');
+  document.getElementById('upload-placeholder').style.display = '';
+  document.getElementById('upload-preview').style.display = 'none';
+  document.getElementById('img-remove-btn').classList.add('hidden');
+  document.getElementById('img-size-badge').classList.add('hidden');
+  document.getElementById('upload-zone').onclick = triggerUpload;
+  document.getElementById('file-input').value = '';
+  document.getElementById('hotspot-section').style.display = 'none';
+  renderHotspots();
+  markDirty();
+};
+
+/* ─── Hotspot editor ──────────────────────────────────────── */
+window.startPlacing = function() {
+  isPlacing = true;
+  document.getElementById('hs-canvas').classList.add('placing');
+  document.getElementById('btn-add-hs').classList.add('hidden');
+  document.getElementById('btn-cancel-hs').classList.remove('hidden');
+  document.getElementById('hs-hint-text').textContent = 'Clique na imagem para posicionar o ponto';
+};
+
+window.cancelPlacing = function() {
+  isPlacing = false;
+  document.getElementById('hs-canvas').classList.remove('placing');
+  document.getElementById('btn-add-hs').classList.remove('hidden');
+  document.getElementById('btn-cancel-hs').classList.add('hidden');
+  document.getElementById('hs-hint-text').textContent = 'Clique em "Adicionar ponto" e depois clique na imagem para posicionar';
+};
+
+window.handleCanvasClick = function(e) {
+  if (!isPlacing) return;
+  const rect = e.currentTarget.getBoundingClientRect();
+  const img = document.getElementById('hs-image');
+  const imgRect = img.getBoundingClientRect();
+  const x = ((e.clientX - imgRect.left) / imgRect.width * 100).toFixed(2);
+  const y = ((e.clientY - imgRect.top) / imgRect.height * 100).toFixed(2);
+  const newHs = { id: uid(), x: parseFloat(x), y: parseFloat(y), title: '', desc: '', link: '' };
+  hotspots.push(newHs);
+  cancelPlacing();
+  selectedHsId = newHs.id;
+  renderHotspots();
+  markDirty();
+};
+
+function renderHotspots() {
+  // Pins on image
+  const canvas = document.getElementById('hs-canvas');
+  canvas.querySelectorAll('.hs-pin').forEach(p => p.remove());
+  hotspots.forEach((hs, i) => {
+    const pin = document.createElement('div');
+    pin.className = 'hs-pin' + (hs.id === selectedHsId ? ' selected' : '');
+    pin.style.left = hs.x + '%';
+    pin.style.top = hs.y + '%';
+    pin.textContent = i + 1;
+    pin.onclick = () => { selectedHsId = hs.id; renderHotspots(); };
+    canvas.appendChild(pin);
+  });
+  // List
+  const list = document.getElementById('hs-list');
+  list.innerHTML = '';
+  hotspots.forEach((hs, i) => {
+    const item = document.createElement('div');
+    item.className = 'hs-item' + (hs.id === selectedHsId ? ' selected-item' : '');
+    item.innerHTML = `
+      <div class="hs-item-num">${i+1}</div>
+      <div class="hs-item-fields">
+        <input class="form-input" type="text" placeholder="Título (ex: Tampo bancada)" value="${esc(hs.title)}"
+          oninput="updateHs('${hs.id}','title',this.value)">
+        <textarea class="form-input" rows="2" placeholder="Descrição"
+          oninput="updateHs('${hs.id}','desc',this.value)">${esc(hs.desc)}</textarea>
+        <input class="form-input" type="url" placeholder="Link (opcional)" value="${esc(hs.link)}"
+          oninput="updateHs('${hs.id}','link',this.value)">
+      </div>
+      <div class="hs-item-actions">
+        <button class="btn btn-icon" onclick="removeHs('${hs.id}')" title="Remover">✕</button>
+      </div>`;
+    list.appendChild(item);
+  });
+}
+
+window.updateHs = function(id, field, value) {
+  const hs = hotspots.find(h => h.id === id);
+  if (hs) { hs[field] = value; markDirty(); }
+};
+
+window.removeHs = function(id) {
+  hotspots = hotspots.filter(h => h.id !== id);
+  if (selectedHsId === id) selectedHsId = null;
+  renderHotspots();
+  markDirty();
+};
+
+/* ─── Items list ──────────────────────────────────────────── */
+function renderItems() {
+  const list = document.getElementById('items-list');
+  list.innerHTML = '';
+  items.forEach((item, i) => {
+    const row = document.createElement('div');
+    row.className = 'item-row';
+    row.innerHTML = `
+      <div class="item-row-num">${String(i+1).padStart(2,'0')}</div>
+      <div style="display:flex;flex-direction:column;gap:6px;flex:1">
+        <input class="form-input" type="text" placeholder="Descrição do trabalho" value="${esc(item.text)}"
+          oninput="updateItem('${item.id}','text',this.value)">
+        <input class="form-input" type="text" placeholder="Nota (opcional)" value="${esc(item.note)}"
+          oninput="updateItem('${item.id}','note',this.value)" style="font-size:12px">
+      </div>
+      <button class="btn btn-icon" onclick="removeItem('${item.id}')" title="Remover">✕</button>`;
+    list.appendChild(row);
+  });
+}
+
+window.addItem = function() {
+  items.push({id: uid(), text: '', note: ''});
+  renderItems();
+  markDirty();
+};
+
+window.updateItem = function(id, field, value) {
+  const it = items.find(i => i.id === id);
+  if (it) { it[field] = value; markDirty(); }
+};
+
+window.removeItem = function(id) {
+  items = items.filter(i => i.id !== id);
+  renderItems();
+  markDirty();
+};
+
+/* ─── Save ────────────────────────────────────────────────── */
+window.saveReserva = async function() {
+  const nome = document.getElementById('f-nome').value.trim();
+  if (!nome) { showToast('error', '⚠', 'Preenche o nome do cliente'); return; }
+
+  showSpinner('A guardar…');
+  document.getElementById('btn-save').disabled = true;
+
+  if (!currentId) currentId = uid();
+
+  const data = {
+    id: currentId,
+    createdAt: Date.now(),
+    cliente: {
+      nome: document.getElementById('f-nome').value.trim(),
+      num: document.getElementById('f-num').value.trim(),
+      tel: document.getElementById('f-tel').value.trim(),
+      email: document.getElementById('f-email').value.trim(),
+      morada: document.getElementById('f-morada').value.trim(),
+    },
+    material: {
+      nome: document.getElementById('f-material').value.trim(),
+      acabamento: document.getElementById('f-acabamento').value.trim(),
+      espessura: document.getElementById('f-espessura').value.trim(),
+    },
+    image: imageDataUrl || null,
+    hotspots: hotspots,
+    items: items,
+    notas: document.getElementById('f-notas').value.trim(),
+  };
+
+  try {
+    await setDoc(doc(db, 'reservas', currentId), data);
+    isDirty = false;
+    hideSpinner();
+    showToast('success', '✓', 'Reserva guardada');
+    showShareSection();
+  } catch(err) {
+    hideSpinner();
+    console.error(err);
+    showToast('error', '⚠', 'Erro ao guardar: ' + err.message);
+    document.getElementById('btn-save').disabled = false;
+  }
+};
+
+function showShareSection() {
+  const section = document.getElementById('share-section');
+  section.classList.remove('hidden');
+  const url = location.origin + location.pathname + '?id=' + currentId;
+  document.getElementById('share-url').value = url;
+}
+
+window.copyShareLink = function() {
+  const val = document.getElementById('share-url').value;
+  navigator.clipboard.writeText(val).then(() => showToast('success','✓','Link copiado'));
+};
+
+window.openShareLink = function() {
+  window.open(document.getElementById('share-url').value, '_blank');
+};
+
+/* ─── New / Load ──────────────────────────────────────────── */
+window.newReserva = function() {
+  if (isDirty && !confirm('Tens alterações por guardar. Continuar?')) return;
+  currentId = null; isDirty = false; hotspots = []; selectedHsId = null; imageDataUrl = null;
+  ['f-nome','f-num','f-tel','f-email','f-morada','f-material','f-acabamento','f-espessura','f-notas']
+    .forEach(id => document.getElementById(id).value = '');
+  removeImage({ stopPropagation: ()=>{} });
+  items = [
+    {id: uid(), text: 'Tampo em granito', note: ''},
+    {id: uid(), text: 'Rodatampo em granito', note: ''},
+    {id: uid(), text: 'Transporte e montagem', note: ''},
+    {id: uid(), text: 'Rebaixo a face lava-loiça', note: ''},
+    {id: uid(), text: 'Corte bruto — placa', note: ''},
+  ];
+  renderItems();
+  document.getElementById('share-section').classList.add('hidden');
+  document.getElementById('btn-save').disabled = true;
+};
+
+/* ─── Saved list ──────────────────────────────────────────── */
+window.showSaved = async function() {
+  document.getElementById('saved-modal').classList.remove('hidden');
+  const list = document.getElementById('saved-list');
+  list.innerHTML = '<div class="empty-state">A carregar…</div>';
+  try {
+    const q = query(collection(db, 'reservas'), orderBy('createdAt', 'desc'));
+    const snap = await getDocs(q);
+    if (snap.empty) { list.innerHTML = '<div class="empty-state">Nenhuma reserva guardada</div>'; return; }
+    list.innerHTML = '';
+    snap.forEach(docSnap => {
+      const d = docSnap.data();
+      const div = document.createElement('div');
+      div.className = 'saved-item';
+      const date = new Date(d.createdAt).toLocaleDateString('pt-PT');
+      div.innerHTML = `
+        <div class="saved-item-info" onclick="loadReserva('${d.id}')">
+          <div class="saved-item-name">${esc(d.cliente?.nome || '—')}</div>
+          <div class="saved-item-meta">${esc(d.material?.nome || '')} · ${date}</div>
+        </div>
+        <div class="saved-item-actions">
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();copyLink('${d.id}')">Copiar link</button>
+          <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteReserva('${d.id}')">Apagar</button>
+        </div>`;
+      list.appendChild(div);
+    });
+  } catch(e) {
+    list.innerHTML = '<div class="empty-state">Erro ao carregar</div>';
+  }
+};
+
+window.hideSaved = function() {
+  document.getElementById('saved-modal').classList.add('hidden');
+};
+
+window.loadReserva = async function(id) {
+  if (isDirty && !confirm('Tens alterações por guardar. Continuar?')) return;
+  hideSaved();
+  showSpinner('A carregar…');
+  try {
+    const snap = await getDoc(doc(db, 'reservas', id));
+    if (!snap.exists()) { hideSpinner(); showToast('error','⚠','Reserva não encontrada'); return; }
+    const d = snap.data();
+    currentId = id; isDirty = false;
+    document.getElementById('f-nome').value = d.cliente?.nome || '';
+    document.getElementById('f-num').value = d.cliente?.num || '';
+    document.getElementById('f-tel').value = d.cliente?.tel || '';
+    document.getElementById('f-email').value = d.cliente?.email || '';
+    document.getElementById('f-morada').value = d.cliente?.morada || '';
+    document.getElementById('f-material').value = d.material?.nome || '';
+    document.getElementById('f-acabamento').value = d.material?.acabamento || '';
+    document.getElementById('f-espessura').value = d.material?.espessura || '';
+    document.getElementById('f-notas').value = d.notas || '';
+    hotspots = d.hotspots || [];
+    items = d.items || [];
+    imageDataUrl = d.image || null;
+    if (imageDataUrl) {
+      showImagePreview(imageDataUrl, null);
+      document.getElementById('hotspot-section').style.display = '';
+      document.getElementById('hs-image').src = imageDataUrl;
+    }
+    renderHotspots();
+    renderItems();
+    showShareSection();
+    hideSpinner();
+    document.getElementById('btn-save').disabled = false;
+  } catch(e) {
+    hideSpinner();
+    showToast('error','⚠','Erro: ' + e.message);
+  }
+};
+
+window.deleteReserva = async function(id) {
+  if (!confirm('Apagar esta reserva?')) return;
+  try {
+    await deleteDoc(doc(db, 'reservas', id));
+    showSaved();
+    showToast('success','✓','Reserva apagada');
+  } catch(e) {
+    showToast('error','⚠','Erro ao apagar');
+  }
+};
+
+window.copyLink = function(id) {
+  const url = location.origin + location.pathname + '?id=' + id;
+  navigator.clipboard.writeText(url).then(() => showToast('success','✓','Link copiado'));
+};
+
+/* ─── Share view ──────────────────────────────────────────── */
+async function loadShareView(id) {
+  showSpinner('A carregar…');
+  try {
+    const snap = await getDoc(doc(db, 'reservas', id));
+    if (!snap.exists()) { hideSpinner(); document.getElementById('sh-body').innerHTML = '<div style="padding:60px;text-align:center;color:var(--text-2)">Reserva não encontrada.</div>'; return; }
+    const d = snap.data();
+    hideSpinner();
+    renderShareView(d);
+  } catch(e) {
+    hideSpinner();
+    console.error(e);
+  }
+}
+
+function renderShareView(d) {
+  // Header ref
+  const ref = d.cliente?.num ? `Cliente <b>${esc(d.cliente.num)}</b>` : '';
+  document.getElementById('sh-ref-num').innerHTML = ref;
+
+  // Client strip
+  const cells = [
+    {label:'Cliente', val: d.cliente?.nome || '—', gold: false},
+    {label:'Contacto', val: d.cliente?.tel || '—', gold: false},
+    {label:'Material', val: d.material?.nome || '—', gold: true},
+    {label:'Espessura', val: [d.material?.espessura, d.material?.acabamento].filter(Boolean).join(' · ') || '—', gold: false},
+  ];
+  document.getElementById('sh-client-strip').innerHTML = cells.map(c =>
+    `<div class="sh-cell"><span class="sh-cell-label">${c.label}</span><div class="sh-cell-val${c.gold?' gold':''}">${esc(c.val)}</div></div>`
+  ).join('');
+
+  // Image + hotspots
+  if (d.image) {
+    const wrap = document.getElementById('sh-img-wrap');
+    wrap.classList.remove('hidden');
+    document.getElementById('sh-img-label').style.display = '';
+    const img = document.getElementById('sh-img');
+    img.src = d.image;
+    img.onload = () => renderShareHotspots(d.hotspots || [], wrap);
+  }
+
+  // Items
+  const itemsEl = document.getElementById('sh-items');
+  (d.items || []).forEach((item, i) => {
+    if (!item.text) return;
+    const div = document.createElement('div');
+    div.className = 'sh-item';
+    div.innerHTML = `
+      <div class="sh-item-num">${String(i+1).padStart(2,'0')}</div>
+      <div class="sh-item-text">${esc(item.text)}${item.note ? `<small>${esc(item.note)}</small>` : ''}</div>`;
+    itemsEl.appendChild(div);
+  });
+
+  // Notes
+  if (d.notas) {
+    document.getElementById('sh-notes-wrap').classList.remove('hidden');
+    document.getElementById('sh-notes').textContent = d.notas;
+  }
+
+  // Footer
+  const cli = d.cliente?.nome ? `Cliente <b>${esc(d.cliente.num||'')}</b> · ${esc(d.cliente.nome)}` : '';
+  document.getElementById('sh-footer-ref').innerHTML = cli;
+}
+
+function renderShareHotspots(hs, wrap) {
+  // Remove existing
+  wrap.querySelectorAll('.sh-hotspot,.sh-tooltip').forEach(e => e.remove());
+  let activeId = null;
+
+  hs.forEach((h, i) => {
+    const pin = document.createElement('div');
+    pin.className = 'sh-hotspot';
+    pin.style.left = h.x + '%';
+    pin.style.top = h.y + '%';
+    pin.textContent = i + 1;
+
+    // Tooltip
+    const tt = document.createElement('div');
+    tt.className = 'sh-tooltip';
+    tt.id = 'shtt-' + h.id;
+    tt.innerHTML = `
+      <button class="sh-tooltip-close" onclick="closeShTt('${h.id}')">×</button>
+      <div class="sh-tooltip-title">${i+1}. ${esc(h.title || '')}</div>
+      <div class="sh-tooltip-desc">${esc(h.desc || '')}</div>
+      ${h.link ? `<a class="sh-tooltip-link" href="${esc(h.link)}" target="_blank">🔗 Ver produto</a>` : ''}`;
+
+    pin.onclick = () => {
+      if (activeId === h.id) { closeShTt(h.id); return; }
+      if (activeId) closeShTt(activeId);
+      // Position tooltip
+      const pinRect = pin.getBoundingClientRect();
+      const wrapRect = wrap.getBoundingClientRect();
+      let left = pinRect.left - wrapRect.left + 18;
+      let top = pinRect.top - wrapRect.top - 10;
+      if (left + 270 > wrapRect.width) left = pinRect.left - wrapRect.left - 275;
+      if (top < 0) top = pinRect.top - wrapRect.top + 38;
+      tt.style.left = left + 'px';
+      tt.style.top = top + 'px';
+      tt.classList.add('visible');
+      pin.classList.add('active');
+      activeId = h.id;
+    };
+
+    wrap.appendChild(pin);
+    wrap.appendChild(tt);
+  });
+
+  window.closeShTt = (id) => {
+    const tt = document.getElementById('shtt-' + id);
+    if (tt) tt.classList.remove('visible');
+    wrap.querySelectorAll('.sh-hotspot').forEach(p => p.classList.remove('active'));
+    activeId = null;
+  };
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.sh-hotspot') && !e.target.closest('.sh-tooltip')) {
+      if (activeId) closeShTt(activeId);
+    }
+  });
+}
+
+/* ─── UI helpers ──────────────────────────────────────────── */
+function showSpinner(label) {
+  document.getElementById('spinner-label').textContent = label;
+  document.getElementById('spinner').classList.remove('hidden');
+}
+function hideSpinner() {
+  document.getElementById('spinner').classList.add('hidden');
+}
+
+let toastTimer;
+function showToast(type, icon, msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-icon').textContent = icon;
+  document.getElementById('toast-msg').textContent = msg;
+  t.className = 'toast ' + type + ' show';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ─── Boot ────────────────────────────────────────────────── */
+router();
+</script>
+</body>
+</html>
