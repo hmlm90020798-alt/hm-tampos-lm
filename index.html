@@ -992,6 +992,7 @@ async function loadShareView(id) {
 }
 
 function renderShareView(d) {
+  window._shareData = d; // store for PDF generation
   document.getElementById('sh-ref-num').innerHTML =
     d.cliente?.pc ? `PC <b>${esc(d.cliente.pc)}</b>` : '';
 
@@ -1112,7 +1113,106 @@ function esc(s) {
 
 /* ── PDF / Print ─────────────────────────────────────────── */
 window.gerarPDF = function() {
-  window.print();
+  // Build a self-contained print window with compact A4 layout
+  const d = window._shareData;
+  if (!d) return;
+
+  const esc = s => s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') : '';
+
+  const clientCells = [
+    {label:'Cliente',   val: d.cliente?.nome || '—'},
+    {label:'Nº PC',     val: d.cliente?.pc   || '—'},
+    {label:'Contacto',  val: d.cliente?.tel  || '—'},
+    {label:'Material',  val: d.material?.nome || '—'},
+    {label:'Espessura', val: [d.material?.espessura, d.material?.acabamento].filter(Boolean).join(' · ') || '—'},
+  ];
+
+  const itemsHtml = (d.items || []).filter(i => i.text).map((it, i) => `
+    <div style="display:flex;align-items:baseline;gap:8px;padding:5px 10px;background:#f7f7f7;border:1px solid #eee;border-radius:3px;margin-bottom:3px;page-break-inside:avoid">
+      <span style="font-family:'DM Mono',monospace;font-size:9px;color:#C4A96A;width:18px;flex-shrink:0">${String(i+1).padStart(2,'0')}</span>
+      <span style="font-size:11px;color:#111;line-height:1.3">${esc(it.text)}${it.note ? `<br><small style="font-size:9px;color:#777">${esc(it.note)}</small>` : ''}</span>
+    </div>`).join('');
+
+  const notesHtml = d.notas ? `
+    <div style="margin-top:8px">
+      <div style="font-family:'DM Mono',monospace;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:#C4A96A;margin-bottom:6px;display:flex;align-items:center;gap:8px">
+        NOTAS <span style="flex:1;height:1px;background:#ddd;display:inline-block"></span>
+      </div>
+      <div style="background:#f7f7f7;border:1px solid #eee;border-radius:3px;padding:8px 12px;font-size:10px;color:#555;line-height:1.5;white-space:pre-wrap">${esc(d.notas)}</div>
+    </div>` : '';
+
+  const imgHtml = d.image ? `<img src="${d.image}" style="width:100%;display:block;border-radius:3px">` : '';
+
+  const html = `<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<title>Reserva de Tampo — ${esc(d.cliente?.nome||'')}</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body{font-family:'DM Sans',sans-serif;background:#fff;color:#111;font-size:11px;padding:0}
+  @page{margin:12mm 14mm;size:A4}
+  @media print{.no-print{display:none!important}}
+</style>
+</head>
+<body>
+<!-- HEADER -->
+<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1.5px solid #C4A96A;padding:8px 0 10px;margin-bottom:10px">
+  <div style="display:flex;align-items:center;gap:10px">
+    <div style="width:28px;height:28px;background:#C4A96A;border-radius:3px;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:9px;font-weight:500;color:#111;flex-shrink:0">LM</div>
+    <div>
+      <div style="font-size:12px;font-weight:600;color:#C4A96A">Leroy Merlin Viseu — Loja 43</div>
+      <div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:1px;color:#888">RESERVA DE TAMPO</div>
+    </div>
+  </div>
+  <div style="font-family:'DM Mono',monospace;font-size:10px;color:#888;text-align:right">
+    ${d.cliente?.pc ? `PC <span style="color:#C4A96A;font-weight:500">${esc(d.cliente.pc)}</span>` : ''}
+  </div>
+</div>
+
+<!-- CLIENT STRIP -->
+<div style="display:flex;border:1px solid #ddd;border-radius:4px;margin-bottom:10px;overflow:hidden">
+  ${clientCells.map(c => `
+    <div style="flex:1;padding:6px 12px;border-right:1px solid #ddd">
+      <div style="font-family:'DM Mono',monospace;font-size:7px;letter-spacing:1.5px;text-transform:uppercase;color:#999;margin-bottom:3px">${c.label}</div>
+      <div style="font-size:11px;font-weight:500;color:${c.label==='Material'?'#C4A96A':'#111'}">${esc(c.val)}</div>
+    </div>`).join('')}
+  <div style="flex:1;padding:6px 12px">
+    <div style="font-family:'DM Mono',monospace;font-size:7px;letter-spacing:1.5px;text-transform:uppercase;color:#999;margin-bottom:3px">Email</div>
+    <div style="font-size:10px;color:#555">${esc(d.cliente?.email||'—')}</div>
+  </div>
+</div>
+
+<!-- MAIN: image left, items right -->
+<div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:10px">
+  ${d.image ? `
+  <div style="flex:1.1;border:1px solid #ddd;border-radius:4px;overflow:hidden;max-width:55%">
+    ${imgHtml}
+  </div>` : ''}
+  <div style="flex:1">
+    <div style="font-family:'DM Mono',monospace;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:#C4A96A;margin-bottom:6px;display:flex;align-items:center;gap:8px">
+      TRABALHOS A CONSIDERAR <span style="flex:1;height:1px;background:#ddd;display:inline-block"></span>
+    </div>
+    ${itemsHtml}
+  </div>
+</div>
+
+${notesHtml}
+
+<!-- FOOTER -->
+<div style="border-top:1px solid #ddd;margin-top:10px;padding-top:6px;display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:8px;color:#aaa">
+  <span>Leroy Merlin Viseu · Loja 43 · <span style="color:#C4A96A">VPR Hélder Melo</span></span>
+  <span>${d.cliente?.pc ? `PC <span style="color:#C4A96A">${esc(d.cliente.pc)}</span> · ` : ''}${esc(d.cliente?.nome||'')}</span>
+</div>
+
+<script>window.onload = function(){ window.print(); window.onafterprint = function(){ window.close(); }; }<\/script>
+</body>
+</html>`;
+
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
 };
 
 </script>
