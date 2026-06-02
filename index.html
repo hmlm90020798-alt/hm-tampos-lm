@@ -851,7 +851,7 @@ window.newReserva = function() {
   if (isDirty && !confirm('Tens alterações por guardar. Continuar?')) return;
   currentId = null; isDirty = false; hotspots = []; selectedHsId = null;
   imageDataUrl = null;
-  ['f-nome','f-num','f-pc','f-tel','f-email','f-morada','f-material','f-acabamento','f-espessura','f-notas']
+  ['f-nome','f-pc','f-tel','f-email','f-morada','f-material','f-acabamento','f-espessura','f-notas']
     .forEach(id => document.getElementById(id).value = '');
   removeImage(null);
   items = defaultItems();
@@ -901,7 +901,6 @@ window.loadReserva = async function(id) {
     const d = snap.data();
     currentId = id; isDirty = false;
     document.getElementById('f-nome').value    = d.cliente?.nome    || '';
-    document.getElementById('f-num').value     = d.cliente?.num     || '';
     document.getElementById('f-pc').value      = d.cliente?.pc      || '';
     document.getElementById('f-tel').value     = d.cliente?.tel     || '';
     document.getElementById('f-email').value   = d.cliente?.email   || '';
@@ -951,13 +950,10 @@ async function loadShareView(id) {
 
 function renderShareView(d) {
   document.getElementById('sh-ref-num').innerHTML =
-    [d.cliente?.num && `Cliente <b>${esc(d.cliente.num)}</b>`,
-     d.cliente?.pc  && `PC <b>${esc(d.cliente.pc)}</b>`]
-    .filter(Boolean).join(' · ') || '';
+    d.cliente?.pc ? `PC <b>${esc(d.cliente.pc)}</b>` : '';
 
   const cells = [
     {label:'Cliente',    val: d.cliente?.nome || '—',  gold: false},
-    {label:'Nº Cliente', val: d.cliente?.num  || '—',  gold: false},
     {label:'Nº PC',      val: d.cliente?.pc   || '—',  gold: false},
     {label:'Material',   val: d.material?.nome || '—', gold: true},
     {label:'Espessura',  val: [d.material?.espessura, d.material?.acabamento].filter(Boolean).join(' · ') || '—', gold: false},
@@ -993,8 +989,7 @@ function renderShareView(d) {
 
   document.getElementById('sh-footer-ref').innerHTML =
     d.cliente?.nome
-      ? [d.cliente?.num && `Cliente <b>${esc(d.cliente.num)}</b>`,
-         d.cliente?.pc  && `PC <b>${esc(d.cliente.pc)}</b>`,
+      ? [d.cliente?.pc && `PC <b>${esc(d.cliente.pc)}</b>`,
          esc(d.cliente.nome)].filter(Boolean).join(' · ')
       : '';
 }
