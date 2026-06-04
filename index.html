@@ -199,7 +199,7 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.6}
 .sh-ref{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-2);text-align:right}
 .sh-ref b{color:var(--gold);font-size:14px}
 .sh-body{max-width:840px;margin:0 auto;padding:36px 24px 60px}
-.sh-client-strip{display:flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:32px}
+.sh-client-strip{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:32px}
 .sh-cell{flex:1;padding:14px 20px;border-right:1px solid var(--border)}
 .sh-cell:last-child{border-right:none}
 .sh-cell-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-2);display:block;margin-bottom:5px}
@@ -998,16 +998,27 @@ function renderShareView(d) {
   document.getElementById('sh-ref-num').innerHTML =
     d.cliente?.pc ? `PC <b>${esc(d.cliente.pc)}</b>` : '';
 
-  const cells = [
-    {label:'Cliente',    val: d.cliente?.nome || '—',  gold: false},
-    {label:'Nº PC',      val: d.cliente?.pc   || '—',  gold: false},
-    {label:'Material',   val: d.material?.nome || '—', gold: true},
-    {label:'Espessura',  val: [d.material?.espessura, d.material?.acabamento].filter(Boolean).join(' · ') || '—', gold: false},
+  // Row 1: client contact info
+  const clientCells = [
+    {label:'Cliente',   val: d.cliente?.nome   || '—', gold: false},
+    {label:'Nº PC',     val: d.cliente?.pc     || '—', gold: false},
+    {label:'Contacto',  val: d.cliente?.tel    || '—', gold: false},
+    {label:'Email',     val: d.cliente?.email  || '—', gold: false},
+    {label:'Morada',    val: d.cliente?.morada || '—', gold: false},
   ];
-  document.getElementById('sh-client-strip').innerHTML = cells.map(c =>
+  // Row 2: material info
+  const materialCells = [
+    {label:'Material',   val: d.material?.nome || '—', gold: true},
+    {label:'Acabamento', val: d.material?.acabamento || '—', gold: false},
+    {label:'Espessura',  val: d.material?.espessura || '—', gold: false},
+  ];
+  const renderStrip = (cells) => cells.map(c =>
     `<div class="sh-cell"><span class="sh-cell-label">${c.label}</span>
      <div class="sh-cell-val${c.gold?' gold':''}">${esc(c.val)}</div></div>`
   ).join('');
+  document.getElementById('sh-client-strip').innerHTML =
+    `<div style="display:flex;flex:1;flex-wrap:wrap">${renderStrip(clientCells)}</div>
+     <div style="display:flex;border-top:1px solid var(--border)">${renderStrip(materialCells)}</div>`;
 
   if (d.image) {
     const wrap = document.getElementById('sh-img-wrap');
