@@ -99,7 +99,7 @@ a{color:inherit;text-decoration:none}
 .form-input{background:var(--dark-4);border:1px solid var(--border-soft);border-radius:5px;padding:9px 12px;font-size:14px;color:var(--text);transition:var(--transition)}
 .form-input:focus{outline:none;border-color:var(--gold);background:var(--dark-3)}
 .form-input::placeholder{color:var(--text-3)}
-textarea.form-input{resize:vertical;min-height:80px;line-height:1.6}
+textarea.form-input{resize:vertical;min-height:120px;line-height:1.7;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
 
 /* ── IMAGE UPLOAD ───────────────────────────────────────────── */
 .img-upload-zone{
@@ -479,7 +479,7 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.6}
     <div class="ed-section">
       <div class="ed-section-title">Notas para o marmorista</div>
       <div class="ed-card" style="padding:16px">
-        <textarea class="form-input" id="f-notas" placeholder="Observações, condições de acesso, datas…" oninput="markDirty()"></textarea>
+        <textarea class="form-input" id="f-notas" rows="5" placeholder="Observações, condições de acesso, datas…" oninput="markDirty(); autoResize(this)"></textarea>
       </div>
     </div>
 
@@ -1235,6 +1235,19 @@ ${notesHtml}
   win.document.write(html);
   win.document.close();
 };
+
+
+/* ── Auto-resize textarea ────────────────────────────────── */
+window.autoResize = function(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+};
+// Run on load for pre-filled textareas
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('textarea.form-input').forEach(t => {
+    if (t.value) autoResize(t);
+  });
+});
 
 </script>
 </body>
