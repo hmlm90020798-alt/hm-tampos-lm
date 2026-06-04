@@ -201,6 +201,17 @@ textarea.form-input{resize:none;width:100%;min-height:120px;line-height:1.7;over
 .sh-body{max-width:840px;margin:0 auto;padding:36px 24px 60px}
 .sh-client-strip{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:28px}
 .sh-strip-row{display:flex}
+.sh-block{padding:16px 20px}
+.sh-block-id{flex:0 0 220px;border-right:1px solid var(--border)}
+.sh-block-contact{flex:1;display:flex;flex-direction:column;justify-content:center;gap:0}
+.sh-block-title{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-3);margin-bottom:6px}
+.sh-block-name{font-size:18px;font-weight:600;color:var(--text);line-height:1.2;margin-bottom:4px}
+.sh-block-sub{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-2)}
+.sh-block-sub span{color:var(--gold)}
+.sh-contact-row{display:flex;align-items:baseline;gap:0;padding:7px 20px;border-bottom:1px solid var(--border-soft)}
+.sh-contact-row:last-child{border-bottom:none}
+.sh-contact-row .sh-cell-label{width:68px;flex-shrink:0;font-size:8px}
+.sh-contact-val{font-size:13px;font-weight:400;color:var(--text);line-height:1.3}
 .sh-strip-material{border-top:1px solid rgba(196,169,106,0.1);background:rgba(255,255,255,0.015)}
 .sh-cell{flex:1;padding:10px 16px;border-right:1px solid var(--border)}
 .sh-cell:last-child{border-right:none}
@@ -1015,11 +1026,27 @@ function renderShareView(d) {
   ];
   document.getElementById('sh-client-strip').innerHTML = `
     <div class="sh-strip-row">
-      ${clientCells.map((c,i) => `
-        <div class="sh-cell" style="${i===4?'flex:1.6':''}">
-          <span class="sh-cell-label">${c.label}</span>
-          <div class="sh-cell-val${c.gold?' gold':''}">${esc(c.val)}</div>
-        </div>`).join('')}
+      <!-- Bloco identidade -->
+      <div class="sh-block sh-block-id">
+        <div class="sh-block-title">Cliente</div>
+        <div class="sh-block-name">${esc(d.cliente?.nome||'—')}</div>
+        <div class="sh-block-sub">PC <span>${esc(d.cliente?.pc||'—')}</span></div>
+      </div>
+      <!-- Bloco contacto -->
+      <div class="sh-block sh-block-contact">
+        <div class="sh-contact-row">
+          <span class="sh-cell-label">Contacto</span>
+          <span class="sh-contact-val">${esc(d.cliente?.tel||'—')}</span>
+        </div>
+        <div class="sh-contact-row">
+          <span class="sh-cell-label">Email</span>
+          <span class="sh-contact-val">${esc(d.cliente?.email||'—')}</span>
+        </div>
+        <div class="sh-contact-row">
+          <span class="sh-cell-label">Morada</span>
+          <span class="sh-contact-val">${esc(d.cliente?.morada||'—')}</span>
+        </div>
+      </div>
     </div>
     <div class="sh-strip-row sh-strip-material">
       ${materialCells.map(c => `
