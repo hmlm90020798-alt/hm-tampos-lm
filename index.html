@@ -199,11 +199,13 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.6}
 .sh-ref{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-2);text-align:right}
 .sh-ref b{color:var(--gold);font-size:14px}
 .sh-body{max-width:840px;margin:0 auto;padding:36px 24px 60px}
-.sh-client-strip{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:32px}
-.sh-cell{flex:1;padding:14px 20px;border-right:1px solid var(--border)}
+.sh-client-strip{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:28px}
+.sh-strip-row{display:flex}
+.sh-strip-material{border-top:1px solid rgba(196,169,106,0.1);background:rgba(255,255,255,0.015)}
+.sh-cell{flex:1;padding:12px 18px;border-right:1px solid var(--border)}
 .sh-cell:last-child{border-right:none}
-.sh-cell-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-2);display:block;margin-bottom:5px}
-.sh-cell-val{font-size:14px;font-weight:500}
+.sh-cell-label{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-3);display:block;margin-bottom:4px}
+.sh-cell-val{font-size:13px;font-weight:500;line-height:1.3}
 .sh-cell-val.gold{color:var(--gold)}
 .sh-section{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:14px;display:flex;align-items:center;gap:10px}
 .sh-section::after{content:'';flex:1;height:1px;background:var(--border)}
@@ -238,7 +240,7 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.6}
   .form-span-2{grid-column:span 1}
   .sh-header{padding:14px 16px;flex-direction:column;gap:10px;align-items:flex-start}
   .sh-body{padding:24px 16px 40px}
-  .sh-client-strip{flex-direction:column}
+  .sh-strip-row{flex-direction:column}
   .sh-cell{border-right:none;border-bottom:1px solid var(--border)}
   .sh-cell:last-child{border-bottom:none}
   .sh-footer{padding:14px 16px;flex-direction:column;gap:4px}
@@ -267,13 +269,12 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.6}
   .sh-body { padding: 10px 20px 16px !important; max-width: 100% !important; }
 
   /* ── Client strip — compact ── */
-  .sh-client-strip {
-    border: 1px solid #ddd !important; border-radius: 4px !important;
-    display: flex !important; margin-bottom: 10px !important;
-  }
+  .sh-client-strip { border: 1px solid #ddd !important; border-radius: 4px !important; margin-bottom: 10px !important; }
+  .sh-strip-row { display: flex !important; }
+  .sh-strip-material { border-top: 1px solid #eee !important; background: #fafafa !important; }
   .sh-cell { border-right: 1px solid #ddd !important; padding: 6px 12px !important; }
   .sh-cell:last-child { border-right: none !important; }
-  .sh-cell-label { font-size: 7px !important; color: #999 !important; margin-bottom: 2px !important; }
+  .sh-cell-label { font-size: 7px !important; color: #aaa !important; margin-bottom: 2px !important; }
   .sh-cell-val { font-size: 11px !important; color: #111 !important; }
   .sh-cell-val.gold { color: #C4A96A !important; }
 
@@ -1012,13 +1013,21 @@ function renderShareView(d) {
     {label:'Acabamento', val: d.material?.acabamento || '—', gold: false},
     {label:'Espessura',  val: d.material?.espessura || '—', gold: false},
   ];
-  const renderStrip = (cells) => cells.map(c =>
-    `<div class="sh-cell"><span class="sh-cell-label">${c.label}</span>
-     <div class="sh-cell-val${c.gold?' gold':''}">${esc(c.val)}</div></div>`
-  ).join('');
-  document.getElementById('sh-client-strip').innerHTML =
-    `<div style="display:flex;flex:1;flex-wrap:wrap">${renderStrip(clientCells)}</div>
-     <div style="display:flex;border-top:1px solid var(--border)">${renderStrip(materialCells)}</div>`;
+  document.getElementById('sh-client-strip').innerHTML = `
+    <div class="sh-strip-row">
+      ${clientCells.map(c => `
+        <div class="sh-cell">
+          <span class="sh-cell-label">${c.label}</span>
+          <div class="sh-cell-val${c.gold?' gold':''}">${esc(c.val)}</div>
+        </div>`).join('')}
+    </div>
+    <div class="sh-strip-row sh-strip-material">
+      ${materialCells.map(c => `
+        <div class="sh-cell">
+          <span class="sh-cell-label">${c.label}</span>
+          <div class="sh-cell-val${c.gold?' gold':''}">${esc(c.val)}</div>
+        </div>`).join('')}
+    </div>`;
 
   if (d.image) {
     const wrap = document.getElementById('sh-img-wrap');
