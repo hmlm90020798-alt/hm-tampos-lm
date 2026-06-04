@@ -339,6 +339,24 @@ textarea.form-input{resize:none;width:100%;min-height:120px;line-height:1.7;over
   /* ── Page ── */
   @page { margin: 12mm 14mm; size: A4; }
 }
+
+/* ── Detalhe insert ─────────────────────────────────────────── */
+.sh-detalhe-insert{
+  position:absolute;bottom:14px;right:14px;
+  width:28%;max-width:200px;min-width:100px;
+  border:2px solid #fff;border-radius:5px;overflow:hidden;
+  box-shadow:0 4px 16px rgba(0,0,0,0.5);
+  background:#000;
+}
+.sh-detalhe-insert img{width:100%;display:block}
+.sh-detalhe-label{
+  position:absolute;top:0;left:0;
+  background:rgba(196,169,106,0.9);
+  font-family:'DM Mono',monospace;font-size:8px;letter-spacing:1.5px;
+  text-transform:uppercase;color:#111;
+  padding:3px 7px;border-bottom-right-radius:4px;
+}
+
 </style>
 </head>
 <body>
@@ -440,23 +458,48 @@ textarea.form-input{resize:none;width:100%;min-height:120px;line-height:1.7;over
 
     <div class="ed-section">
       <div class="ed-section-title">Imagem da cozinha</div>
-      <div class="ed-card" style="padding:16px">
-        <div class="img-upload-zone" id="upload-zone"
-          onclick="triggerUpload()"
-          ondrop="handleDrop(event)"
-          ondragover="handleDragOver(event)"
-          ondragleave="handleDragLeave(event)">
-          <input type="file" id="file-input" accept="image/*" style="display:none" onchange="handleFile(event)">
-          <div id="upload-placeholder">
-            <div class="img-upload-icon">🖼️</div>
-            <div class="img-upload-text">
-              Clique ou arraste a imagem aqui
-              <small>JPG, PNG · Comprimida para ≤ 150 KB</small>
+      <div class="ed-card" style="padding:16px;display:flex;gap:12px;align-items:flex-start">
+        <!-- Imagem principal -->
+        <div style="flex:2">
+          <div class="form-label" style="margin-bottom:8px">Imagem principal</div>
+          <div class="img-upload-zone" id="upload-zone"
+            onclick="triggerUpload()"
+            ondrop="handleDrop(event)"
+            ondragover="handleDragOver(event)"
+            ondragleave="handleDragLeave(event)">
+            <input type="file" id="file-input" accept="image/*" style="display:none" onchange="handleFile(event)">
+            <div id="upload-placeholder">
+              <div class="img-upload-icon">🖼️</div>
+              <div class="img-upload-text">
+                Clique ou arraste a imagem aqui
+                <small>JPG, PNG · Comprimida para ≤ 150 KB</small>
+              </div>
             </div>
+            <img id="upload-preview" style="display:none" alt="">
+            <button class="img-remove-btn hidden" id="img-remove-btn" onclick="removeImage(event)">✕ Remover</button>
+            <div class="img-size-badge hidden" id="img-size-badge"></div>
           </div>
-          <img id="upload-preview" style="display:none" alt="">
-          <button class="img-remove-btn hidden" id="img-remove-btn" onclick="removeImage(event)">✕ Remover</button>
-          <div class="img-size-badge hidden" id="img-size-badge"></div>
+        </div>
+        <!-- Imagem de detalhe -->
+        <div style="flex:1">
+          <div class="form-label" style="margin-bottom:8px">Detalhe <span style="color:var(--text-3);font-size:9px;text-transform:none;letter-spacing:0">(opcional)</span></div>
+          <div class="img-upload-zone" id="detalhe-zone"
+            onclick="triggerDetalheUpload()"
+            ondrop="handleDetalheDrop(event)"
+            ondragover="handleDragOver(event)"
+            ondragleave="handleDragLeave(event)"
+            style="min-height:120px">
+            <input type="file" id="detalhe-input" accept="image/*" style="display:none" onchange="handleDetalheFile(event)">
+            <div id="detalhe-placeholder">
+              <div class="img-upload-icon" style="font-size:20px">🔍</div>
+              <div class="img-upload-text" style="font-size:12px">
+                Imagem de detalhe
+                <small>Aparece como insert</small>
+              </div>
+            </div>
+            <img id="detalhe-preview" style="display:none" alt="">
+            <button class="img-remove-btn hidden" id="detalhe-remove-btn" onclick="removeDetalhe(event)">✕</button>
+          </div>
         </div>
       </div>
     </div>
@@ -549,6 +592,10 @@ textarea.form-input{resize:none;width:100%;min-height:120px;line-height:1.7;over
         <div class="sh-section hidden" id="sh-img-label">Cozinha — clique nos pontos para detalhes</div>
         <div class="sh-img-wrap hidden" id="sh-img-wrap">
           <img id="sh-img" alt="">
+          <div class="sh-detalhe-insert hidden" id="sh-detalhe-insert">
+            <img id="sh-detalhe-img" alt="Detalhe">
+            <div class="sh-detalhe-label">DETALHE</div>
+          </div>
         </div>
       </div>
       <div class="sh-items-col">
@@ -607,6 +654,7 @@ let isPlacing    = false;
 let hotspots     = [];
 let items        = [];
 let imageDataUrl = null;
+let detalheDataUrl = null;
 let selectedHsId = null;
 
 /* ── Router ──────────────────────────────────────────────── */
@@ -873,6 +921,7 @@ window.saveReserva = async function() {
       espessura:  document.getElementById('f-espessura').value.trim(),
     },
     image:    imageDataUrl || null,
+    detalhe:  detalheDataUrl || null,
     hotspots: hotspots,
     items:    items,
     notas:    document.getElementById('f-notas').value.trim(),
@@ -968,6 +1017,8 @@ window.loadReserva = async function(id) {
     document.getElementById('f-notas').value   = d.notas || '';
     hotspots = d.hotspots || []; items = d.items || [];
     imageDataUrl = d.image || null;
+    detalheDataUrl = d.detalhe || null;
+    if (detalheDataUrl) showDetalhePreview(detalheDataUrl);
     if (imageDataUrl) {
       showPreview(imageDataUrl, null);
       document.getElementById('hotspot-section').classList.remove('hidden');
@@ -1063,6 +1114,11 @@ function renderShareView(d) {
     const img = document.getElementById('sh-img');
     img.src = d.image;
     img.onload = () => renderShareHotspots(d.hotspots || [], wrap);
+    if (d.detalhe) {
+      const insert = document.getElementById('sh-detalhe-insert');
+      insert.classList.remove('hidden');
+      document.getElementById('sh-detalhe-img').src = d.detalhe;
+    }
   }
 
   const itemsEl = document.getElementById('sh-items');
@@ -1190,7 +1246,15 @@ window.gerarPDF = function() {
       <div style="background:#f7f7f7;border:1px solid #eee;border-radius:4px;padding:12px 16px;font-size:11px;color:#555;line-height:1.6;white-space:pre-wrap">${esc(d.notas)}</div>
     </div>` : '';
 
-  const imgHtml = d.image ? `<img src="${d.image}" style="width:100%;display:block;border-radius:3px">` : '';
+  const imgHtml = d.image ? `
+    <div style="position:relative;line-height:0">
+      <img src="${d.image}" style="width:100%;display:block;border-radius:3px">
+      ${d.detalhe ? `
+      <div style="position:absolute;bottom:10px;right:10px;width:28%;border:2px solid #fff;border-radius:4px;overflow:hidden;box-shadow:0 3px 12px rgba(0,0,0,0.5)">
+        <div style="position:absolute;top:0;left:0;background:rgba(196,169,106,0.9);font-family:'DM Mono',monospace;font-size:7px;letter-spacing:1px;text-transform:uppercase;color:#111;padding:2px 6px">DETALHE</div>
+        <img src="${d.detalhe}" style="width:100%;display:block">
+      </div>` : ''}
+    </div>` : '';
 
   const sectionLabel = txt => `
     <div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:#C4A96A;margin-bottom:10px;display:flex;align-items:center;gap:10px">
@@ -1275,6 +1339,53 @@ document.addEventListener('DOMContentLoaded', () => {
     if (t.value) autoResize(t);
   });
 });
+
+
+/* ── Detalhe image ───────────────────────────────────────── */
+window.triggerDetalheUpload = () => { if (!detalheDataUrl) document.getElementById('detalhe-input').click(); };
+window.handleDetalheDrop = e => {
+  e.preventDefault();
+  document.getElementById('detalhe-zone').classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) processDetalhe(f);
+};
+window.handleDetalheFile = e => { if (e.target.files[0]) processDetalhe(e.target.files[0]); };
+
+function processDetalhe(file) {
+  showSpinner('A comprimir detalhe…');
+  const reader = new FileReader();
+  reader.onload = ev => compress(ev.target.result, 80*1024, (data) => {
+    hideSpinner();
+    detalheDataUrl = data;
+    showDetalhePreview(data);
+    markDirty();
+  });
+  reader.readAsDataURL(file);
+}
+
+function showDetalhePreview(data) {
+  const zone = document.getElementById('detalhe-zone');
+  zone.classList.add('has-image');
+  zone.onclick = null;
+  document.getElementById('detalhe-placeholder').style.display = 'none';
+  const prev = document.getElementById('detalhe-preview');
+  prev.src = data; prev.style.display = 'block';
+  document.getElementById('detalhe-remove-btn').classList.remove('hidden');
+}
+
+window.removeDetalhe = function(e) {
+  if (e && e.stopPropagation) e.stopPropagation();
+  detalheDataUrl = null;
+  const zone = document.getElementById('detalhe-zone');
+  if (!zone) return;
+  zone.classList.remove('has-image');
+  zone.onclick = triggerDetalheUpload;
+  document.getElementById('detalhe-placeholder').style.display = '';
+  document.getElementById('detalhe-preview').style.display = 'none';
+  document.getElementById('detalhe-remove-btn').classList.add('hidden');
+  document.getElementById('detalhe-input').value = '';
+  markDirty();
+};
 
 </script>
 </body>
