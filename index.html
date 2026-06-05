@@ -357,6 +357,30 @@ textarea.form-input{resize:none;width:100%;min-height:120px;line-height:1.7;over
   padding:3px 7px;border-bottom-right-radius:4px;
 }
 
+
+/* ── Medidas ────────────────────────────────────────────────── */
+#med-canvas { position:relative; cursor:default; }
+#med-canvas.placing-med { cursor:crosshair; }
+#med-canvas.placing-med img { opacity:0.85; }
+.med-handle {
+  position:absolute; width:12px; height:12px; border-radius:50%;
+  background:var(--gold); border:2px solid #fff;
+  transform:translate(-50%,-50%); cursor:move; z-index:20;
+  box-shadow:0 2px 6px rgba(0,0,0,0.5);
+  transition:transform 0.15s;
+}
+.med-handle:hover { transform:translate(-50%,-50%) scale(1.3); }
+.med-handle.selected-h { background:#fff; border-color:var(--gold); }
+.med-label-el {
+  position:absolute; transform:translate(-50%,-50%);
+  background:var(--dark-2); border:1px solid var(--gold);
+  border-radius:3px; padding:2px 7px;
+  font-family:'DM Mono',monospace; font-size:10px; color:var(--gold);
+  white-space:nowrap; cursor:pointer; z-index:15;
+  pointer-events:auto;
+}
+.med-label-el:hover, .med-label-el.selected-l { background:var(--gold-dim); }
+
 </style>
 </head>
 <body>
@@ -522,6 +546,26 @@ textarea.form-input{resize:none;width:100%;min-height:120px;line-height:1.7;over
       </div>
     </div>
 
+    <!-- MEDIDAS -->
+    <div class="ed-section hidden" id="medidas-section">
+      <div class="ed-section-title">Medidas na imagem</div>
+      <div class="ed-card" style="padding:16px">
+        <div class="hs-place-hint">
+          <span class="hint-icon">📐</span>
+          <span id="med-hint-text">Clique em "Adicionar medida" → clique ponto inicial → clique ponto final</span>
+        </div>
+        <div class="hs-controls">
+          <button class="btn btn-ghost btn-sm" id="btn-add-med" onclick="startMedida()">+ Adicionar medida</button>
+          <button class="btn btn-ghost btn-sm hidden" id="btn-cancel-med" onclick="cancelMedida()">Cancelar</button>
+        </div>
+        <div class="hotspot-canvas-wrap" id="med-canvas">
+          <img id="med-image" alt="" style="pointer-events:auto">
+          <svg id="med-svg" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible"></svg>
+        </div>
+        <div class="hs-list" id="med-list"></div>
+      </div>
+    </div>
+
     <div class="ed-section">
       <div class="ed-section-title">Trabalhos a considerar</div>
       <div class="ed-card" style="padding:16px">
@@ -656,6 +700,11 @@ let items        = [];
 let imageDataUrl = null;
 let detalheDataUrl = null;
 let selectedHsId = null;
+let medidas = [];
+let isPlacingMedida = false;
+let medidaStep = 0; // 0=idle, 1=waiting p1, 2=waiting p2
+let medidaTmp = null; // {x1,y1} waiting for p2
+let selectedMedidaId = null;
 
 /* ── Router ──────────────────────────────────────────────── */
 const shareId = new URLSearchParams(location.search).get('id');
@@ -794,6 +843,7 @@ window.removeImage = function(e) {
   document.getElementById('img-size-badge').classList.add('hidden');
   document.getElementById('file-input').value = '';
   document.getElementById('hotspot-section').classList.add('hidden');
+  document.getElementById('medidas-section').classList.add('hidden');
   renderHotspots(); markDirty();
 };
 
@@ -923,6 +973,7 @@ window.saveReserva = async function() {
     image:    imageDataUrl || null,
     detalhe:  detalheDataUrl || null,
     hotspots: hotspots,
+    medidas:  medidas,
     items:    items,
     notas:    document.getElementById('f-notas').value.trim(),
   };
@@ -1015,7 +1066,7 @@ window.loadReserva = async function(id) {
     document.getElementById('f-acabamento').value = d.material?.acabamento || '';
     document.getElementById('f-espessura').value  = d.material?.espessura  || '';
     document.getElementById('f-notas').value   = d.notas || '';
-    hotspots = d.hotspots || []; items = d.items || [];
+    hotspots = d.hotspots || []; items = d.items || []; medidas = d.medidas || [];
     imageDataUrl = d.image || null;
     detalheDataUrl = d.detalhe || null;
     if (detalheDataUrl) showDetalhePreview(detalheDataUrl);
@@ -1023,8 +1074,12 @@ window.loadReserva = async function(id) {
       showPreview(imageDataUrl, null);
       document.getElementById('hotspot-section').classList.remove('hidden');
       document.getElementById('hs-image').src = imageDataUrl;
+      document.getElementById('medidas-section').classList.remove('hidden');
+      document.getElementById('med-image').src = imageDataUrl;
+      document.getElementById('medidas-section').classList.remove('hidden');
+      document.getElementById('med-image').src = imageDataUrl;
     }
-    renderHotspots(); renderItems(); showShareBox();
+    renderHotspots(); renderItems(); renderMedidas(); showShareBox();
     hideSpinner();
     document.getElementById('btn-save').disabled = false;
   } catch(e) { hideSpinner(); showToast('error','⚠','Erro: '+e.message); }
@@ -1113,7 +1168,7 @@ function renderShareView(d) {
     document.getElementById('sh-img-label').classList.remove('hidden');
     const img = document.getElementById('sh-img');
     img.src = d.image;
-    img.onload = () => renderShareHotspots(d.hotspots || [], wrap);
+    img.onload = () => { renderShareHotspots(d.hotspots || [], wrap); renderShareMedidas(d.medidas || [], wrap); };
     if (d.detalhe) {
       const insert = document.getElementById('sh-detalhe-insert');
       insert.classList.remove('hidden');
@@ -1386,6 +1441,231 @@ window.removeDetalhe = function(e) {
   document.getElementById('detalhe-input').value = '';
   markDirty();
 };
+
+
+/* ── Medidas ─────────────────────────────────────────────── */
+window.startMedida = function() {
+  isPlacingMedida = true; medidaStep = 1; medidaTmp = null;
+  const canvas = document.getElementById('med-canvas');
+  canvas.classList.add('placing-med');
+  canvas.onclick = handleMedClick;
+  document.getElementById('btn-add-med').classList.add('hidden');
+  document.getElementById('btn-cancel-med').classList.remove('hidden');
+  document.getElementById('med-hint-text').textContent = 'Clique na imagem para definir o ponto inicial…';
+};
+
+window.cancelMedida = function() {
+  isPlacingMedida = false; medidaStep = 0; medidaTmp = null;
+  const canvas = document.getElementById('med-canvas');
+  canvas.classList.remove('placing-med');
+  canvas.onclick = null;
+  document.getElementById('btn-add-med').classList.remove('hidden');
+  document.getElementById('btn-cancel-med').classList.add('hidden');
+  document.getElementById('med-hint-text').textContent = 'Clique em "Adicionar medida" → clique ponto inicial → clique ponto final';
+};
+
+function getMedPos(e) {
+  const img = document.getElementById('med-image').getBoundingClientRect();
+  return {
+    x: +((e.clientX - img.left) / img.width * 100).toFixed(2),
+    y: +((e.clientY - img.top)  / img.height * 100).toFixed(2)
+  };
+}
+
+function handleMedClick(e) {
+  if (!isPlacingMedida) return;
+  const pos = getMedPos(e);
+  if (medidaStep === 1) {
+    medidaTmp = pos;
+    medidaStep = 2;
+    document.getElementById('med-hint-text').textContent = 'Agora clique para definir o ponto final…';
+  } else if (medidaStep === 2) {
+    const m = { id: uid(), x1: medidaTmp.x, y1: medidaTmp.y, x2: pos.x, y2: pos.y, label: '' };
+    medidas.push(m);
+    selectedMedidaId = m.id;
+    cancelMedida();
+    renderMedidas();
+    markDirty();
+    // Focus label input
+    setTimeout(() => {
+      const inp = document.getElementById('med-label-' + m.id);
+      if (inp) inp.focus();
+    }, 50);
+  }
+}
+
+function renderMedidas() {
+  const canvas = document.getElementById('med-canvas');
+  // Remove old handles and labels
+  canvas.querySelectorAll('.med-handle,.med-label-el').forEach(e => e.remove());
+  const svg = document.getElementById('med-svg');
+  svg.innerHTML = '';
+
+  const img = document.getElementById('med-image');
+  const W = img.offsetWidth || img.naturalWidth;
+  const H = img.offsetHeight || img.naturalHeight;
+
+  medidas.forEach(m => {
+    const x1p = m.x1 + '%', y1p = m.y1 + '%';
+    const x2p = m.x2 + '%', y2p = m.y2 + '%';
+    const mx = ((m.x1 + m.x2) / 2) + '%';
+    const my = ((m.y1 + m.y2) / 2) + '%';
+    const sel = m.id === selectedMedidaId;
+
+    // SVG line with arrowheads
+    const markerId = 'arrow-' + m.id;
+    const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
+    defs.innerHTML = `
+      <marker id="${markerId}-s" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+        <path d="M6,0 L0,3 L6,6" fill="none" stroke="${sel?'#fff':'#C4A96A'}" stroke-width="1.2"/>
+      </marker>
+      <marker id="${markerId}-e" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto-start-reverse">
+        <path d="M6,0 L0,3 L6,6" fill="none" stroke="${sel?'#fff':'#C4A96A'}" stroke-width="1.2"/>
+      </marker>`;
+    svg.appendChild(defs);
+
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1', m.x1 + '%'); line.setAttribute('y1', m.y1 + '%');
+    line.setAttribute('x2', m.x2 + '%'); line.setAttribute('y2', m.y2 + '%');
+    line.setAttribute('stroke', sel ? '#fff' : '#C4A96A');
+    line.setAttribute('stroke-width', sel ? '1.8' : '1.4');
+    line.setAttribute('stroke-dasharray', '4,2');
+    line.setAttribute('marker-start', `url(#${markerId}-s)`);
+    line.setAttribute('marker-end',   `url(#${markerId}-e)`);
+    svg.appendChild(line);
+
+    // Label in middle
+    const lbl = document.createElement('div');
+    lbl.className = 'med-label-el' + (sel ? ' selected-l' : '');
+    lbl.style.left = mx; lbl.style.top = my;
+    lbl.textContent = m.label || '…';
+    lbl.onclick = e => { e.stopPropagation(); selectedMedidaId = m.id; renderMedidas(); };
+    canvas.appendChild(lbl);
+
+    // Handles — p1 and p2
+    ['1','2'].forEach(p => {
+      const h = document.createElement('div');
+      h.className = 'med-handle' + (sel ? ' selected-h' : '');
+      h.style.left = (p==='1' ? m.x1 : m.x2) + '%';
+      h.style.top  = (p==='1' ? m.y1 : m.y2) + '%';
+      h.dataset.id = m.id; h.dataset.p = p;
+      makeDraggable(h, m, p);
+      canvas.appendChild(h);
+    });
+  });
+
+  // List
+  const list = document.getElementById('med-list');
+  list.innerHTML = '';
+  medidas.forEach((m, i) => {
+    const el = document.createElement('div');
+    el.className = 'hs-item' + (m.id === selectedMedidaId ? ' selected-item' : '');
+    el.innerHTML = `
+      <div class="hs-item-num">${i+1}</div>
+      <div class="hs-item-fields">
+        <input class="form-input" id="med-label-${m.id}" type="text"
+          placeholder="Ex: 223 cm — Bancada principal"
+          value="${esc(m.label)}"
+          oninput="updateMedida('${m.id}','label',this.value)">
+      </div>
+      <div class="hs-item-actions">
+        <button class="btn btn-icon" onclick="removeMedida('${m.id}')">✕</button>
+      </div>`;
+    el.onclick = () => { selectedMedidaId = m.id; renderMedidas(); };
+    list.appendChild(el);
+  });
+}
+
+function makeDraggable(handle, m, point) {
+  let dragging = false, startX, startY, origX, origY;
+  const img = document.getElementById('med-image');
+
+  handle.addEventListener('mousedown', e => {
+    e.stopPropagation();
+    dragging = true;
+    selectedMedidaId = m.id;
+    startX = e.clientX; startY = e.clientY;
+    origX = point === '1' ? m.x1 : m.x2;
+    origY = point === '1' ? m.y1 : m.y2;
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+
+  function onMove(e) {
+    if (!dragging) return;
+    const r = img.getBoundingClientRect();
+    const dx = (e.clientX - startX) / r.width  * 100;
+    const dy = (e.clientY - startY) / r.height * 100;
+    const nx = Math.max(0, Math.min(100, +(origX + dx).toFixed(2)));
+    const ny = Math.max(0, Math.min(100, +(origY + dy).toFixed(2)));
+    if (point === '1') { m.x1 = nx; m.y1 = ny; }
+    else               { m.x2 = nx; m.y2 = ny; }
+    renderMedidas(); markDirty();
+  }
+  function onUp() {
+    dragging = false;
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+  }
+}
+
+window.updateMedida = (id, field, val) => {
+  const m = medidas.find(m => m.id === id);
+  if (m) { m[field] = val; renderMedidas(); markDirty(); }
+};
+window.removeMedida = id => {
+  medidas = medidas.filter(m => m.id !== id);
+  if (selectedMedidaId === id) selectedMedidaId = null;
+  renderMedidas(); markDirty();
+};
+
+/* ── Render medidas on share view ────────────────────────── */
+function renderShareMedidas(meds, wrap) {
+  if (!meds || !meds.length) return;
+  const existing = wrap.querySelector('.med-share-svg');
+  if (existing) existing.remove();
+
+  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('class','med-share-svg');
+  svg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible';
+
+  meds.forEach(m => {
+    const mid = 'ms-' + m.id;
+    const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
+    defs.innerHTML = `
+      <marker id="${mid}-s" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+        <path d="M6,0 L0,3 L6,6" fill="none" stroke="#C4A96A" stroke-width="1.2"/>
+      </marker>
+      <marker id="${mid}-e" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto-start-reverse">
+        <path d="M6,0 L0,3 L6,6" fill="none" stroke="#C4A96A" stroke-width="1.2"/>
+      </marker>`;
+    svg.appendChild(defs);
+
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1', m.x1+'%'); line.setAttribute('y1', m.y1+'%');
+    line.setAttribute('x2', m.x2+'%'); line.setAttribute('y2', m.y2+'%');
+    line.setAttribute('stroke','#C4A96A'); line.setAttribute('stroke-width','1.4');
+    line.setAttribute('stroke-dasharray','4,2');
+    line.setAttribute('marker-start', `url(#${mid}-s)`);
+    line.setAttribute('marker-end',   `url(#${mid}-e)`);
+    svg.appendChild(line);
+
+    // Label as foreignObject
+    if (m.label) {
+      const mx = (m.x1 + m.x2) / 2, my = (m.y1 + m.y2) / 2;
+      const fo = document.createElementNS('http://www.w3.org/2000/svg','foreignObject');
+      fo.setAttribute('x', mx+'%'); fo.setAttribute('y', my+'%');
+      fo.setAttribute('width','1'); fo.setAttribute('height','1');
+      fo.setAttribute('overflow','visible');
+      fo.innerHTML = `<div xmlns="http://www.w3.org/1999/xhtml"
+        style="transform:translate(-50%,-50%);background:rgba(13,13,13,0.85);border:1px solid #C4A96A;
+        border-radius:3px;padding:2px 7px;font-family:'DM Mono',monospace;font-size:10px;
+        color:#C4A96A;white-space:nowrap">${esc(m.label)}</div>`;
+      svg.appendChild(fo);
+    }
+  });
+  wrap.appendChild(svg);
+}
 
 </script>
 </body>
