@@ -1593,7 +1593,7 @@ function renderMedidas() {
         <input class="form-input" id="med-label-${m.id}" type="text"
           placeholder="Ex: 223 cm — Bancada principal"
           value="${esc(m.label)}"
-          oninput="updateMedida('${m.id}','label',this.value)">
+          oninput="updateMedidaLabel('${m.id}',this.value)">
       </div>
       <div class="hs-item-actions">
         <button class="btn btn-icon" onclick="removeMedida('${m.id}')">✕</button>
@@ -1602,13 +1602,6 @@ function renderMedidas() {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
       selectedMedidaId = m.id; renderMedidas();
     };
-    // Also wire input directly to avoid re-render on focus
-    const inp = el.querySelector('input');
-    inp.addEventListener('focus', () => { selectedMedidaId = m.id; });
-    inp.addEventListener('input', () => {
-      const med = medidas.find(x => x.id === m.id);
-      if (med) { med.label = inp.value; markDirty(); renderMedidasSvgOnly(); }
-    });
     list.appendChild(el);
   });
 }
@@ -1688,6 +1681,12 @@ function renderMedidasSvgOnly() {
     canvas.appendChild(lbl);
   });
 }
+
+
+window.updateMedidaLabel = (id, val) => {
+  const m = medidas.find(m => m.id === id);
+  if (m) { m.label = val; markDirty(); renderMedidasSvgOnly(); }
+};
 
 window.updateMedida = (id, field, val) => {
   const m = medidas.find(m => m.id === id);
