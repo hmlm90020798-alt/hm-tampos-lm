@@ -126,15 +126,16 @@ textarea.form-input{resize:none;width:100%;min-height:120px;line-height:1.7;over
 .hotspot-canvas-wrap.placing{cursor:crosshair}
 .hotspot-canvas-wrap.placing img{opacity:0.85}
 .hs-pin{
-  position:absolute;width:30px;height:30px;border-radius:50%;
-  background:rgba(196,169,106,0.2);border:2px solid var(--gold);
+  position:absolute;width:28px;height:28px;border-radius:50%;
+  background:rgba(255,255,255,0.92);border:2px solid var(--gold);
   transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;
-  font-family:'DM Mono',monospace;font-size:11px;font-weight:500;color:var(--gold);
-  cursor:grab;transition:background 0.2s,box-shadow 0.2s;animation:hsPulse 2.5s infinite;
+  font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#111;
+  cursor:grab;transition:transform 0.15s,box-shadow 0.15s;animation:hsPulse 2.5s infinite;
   pointer-events:auto;z-index:20;user-select:none;
+  box-shadow:0 2px 8px rgba(0,0,0,0.4);
 }
-.hs-pin:hover,.hs-pin.selected{background:rgba(196,169,106,0.4);animation:none;box-shadow:0 0 0 6px rgba(196,169,106,0.1)}
-.hs-pin.selected{border-color:#fff}
+.hs-pin:hover,.hs-pin.selected{background:#fff;animation:none;transform:translate(-50%,-50%) scale(1.15);box-shadow:0 3px 12px rgba(0,0,0,0.5)}
+.hs-pin.selected{border-color:#C4A96A;border-width:2.5px}
 @keyframes hsPulse{0%,100%{box-shadow:0 0 0 0 rgba(196,169,106,0.3)}50%{box-shadow:0 0 0 8px rgba(196,169,106,0)}}
 .hs-place-hint{font-size:12px;color:var(--text-2);display:flex;align-items:center;gap:6px;margin-bottom:10px}
 .hs-place-hint .hint-icon{color:var(--gold)}
@@ -223,8 +224,8 @@ textarea.form-input{resize:none;width:100%;min-height:120px;line-height:1.7;over
 .sh-section::after{content:'';flex:1;height:1px;background:var(--border)}
 .sh-img-wrap{position:relative;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);margin-bottom:32px}
 .sh-img-wrap img{width:100%;display:block;user-select:none}
-.sh-hotspot{position:absolute;width:32px;height:32px;border-radius:50%;background:rgba(196,169,106,0.2);border:2px solid var(--gold);transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:11px;color:var(--gold);cursor:pointer;transition:var(--transition);animation:hsPulse 2.5s infinite}
-.sh-hotspot:hover,.sh-hotspot.active{background:rgba(196,169,106,0.4);animation:none;box-shadow:0 0 0 8px rgba(196,169,106,0.12)}
+.sh-hotspot{position:absolute;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.92);border:2px solid var(--gold);transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#111;cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;animation:hsPulse 2.5s infinite;box-shadow:0 2px 8px rgba(0,0,0,0.4)}
+.sh-hotspot:hover,.sh-hotspot.active{background:#fff;animation:none;transform:translate(-50%,-50%) scale(1.15);box-shadow:0 3px 14px rgba(0,0,0,0.5);border-color:#C4A96A}
 .sh-tooltip{position:absolute;background:var(--dark-2);border:1px solid var(--gold);border-radius:var(--radius);padding:14px 16px;width:260px;z-index:50;opacity:0;pointer-events:none;transition:opacity 0.2s ease;box-shadow:0 8px 32px rgba(0,0,0,0.6)}
 .sh-tooltip.visible{opacity:1;pointer-events:auto}
 .sh-tooltip-title{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:7px}
@@ -1543,25 +1544,24 @@ function renderMedidas() {
 
     // SVG line with arrowheads
     const markerId = 'arrow-' + m.id;
-    const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
-    defs.innerHTML = `
-      <marker id="${markerId}-s" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
-        <path d="M6,0 L0,3 L6,6" fill="none" stroke="${sel?'#fff':'#C4A96A'}" stroke-width="1.2"/>
-      </marker>
-      <marker id="${markerId}-e" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto-start-reverse">
-        <path d="M6,0 L0,3 L6,6" fill="none" stroke="${sel?'#fff':'#C4A96A'}" stroke-width="1.2"/>
-      </marker>`;
-    svg.appendChild(defs);
+
 
     const line = document.createElementNS('http://www.w3.org/2000/svg','line');
     line.setAttribute('x1', m.x1 + '%'); line.setAttribute('y1', m.y1 + '%');
     line.setAttribute('x2', m.x2 + '%'); line.setAttribute('y2', m.y2 + '%');
     line.setAttribute('stroke', sel ? '#fff' : '#C4A96A');
-    line.setAttribute('stroke-width', sel ? '1.8' : '1.4');
-    line.setAttribute('stroke-dasharray', '4,2');
-    line.setAttribute('marker-start', `url(#${markerId}-s)`);
-    line.setAttribute('marker-end',   `url(#${markerId}-e)`);
+    line.setAttribute('stroke-width', sel ? '2' : '1.5');
     svg.appendChild(line);
+
+    // Small circle endpoints
+    ['1','2'].forEach(p => {
+      const dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      dot.setAttribute('cx', (p==='1' ? m.x1 : m.x2) + '%');
+      dot.setAttribute('cy', (p==='1' ? m.y1 : m.y2) + '%');
+      dot.setAttribute('r', '3');
+      dot.setAttribute('fill', sel ? '#fff' : '#C4A96A');
+      svg.appendChild(dot);
+    });
 
     // Label in middle
     const lbl = document.createElement('div');
@@ -1744,25 +1744,21 @@ function renderMedidasSvgOnly() {
     const sel = m.id === selectedMedidaId;
     const mid = 'arrow-' + m.id;
 
-    const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
-    defs.innerHTML = `
-      <marker id="${mid}-s" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
-        <path d="M6,0 L0,3 L6,6" fill="none" stroke="${sel?'#fff':'#C4A96A'}" stroke-width="1.2"/>
-      </marker>
-      <marker id="${mid}-e" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto-start-reverse">
-        <path d="M6,0 L0,3 L6,6" fill="none" stroke="${sel?'#fff':'#C4A96A'}" stroke-width="1.2"/>
-      </marker>`;
-    svg.appendChild(defs);
+
 
     const line = document.createElementNS('http://www.w3.org/2000/svg','line');
     line.setAttribute('x1', m.x1+'%'); line.setAttribute('y1', m.y1+'%');
     line.setAttribute('x2', m.x2+'%'); line.setAttribute('y2', m.y2+'%');
     line.setAttribute('stroke', sel ? '#fff' : '#C4A96A');
-    line.setAttribute('stroke-width', sel ? '1.8' : '1.4');
-    line.setAttribute('stroke-dasharray','4,2');
-    line.setAttribute('marker-start', `url(#${mid}-s)`);
-    line.setAttribute('marker-end',   `url(#${mid}-e)`);
+    line.setAttribute('stroke-width', sel ? '2' : '1.5');
     svg.appendChild(line);
+    ['1','2'].forEach(p => {
+      const dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      dot.setAttribute('cx', (p==='1' ? m.x1 : m.x2) + '%');
+      dot.setAttribute('cy', (p==='1' ? m.y1 : m.y2) + '%');
+      dot.setAttribute('r','3'); dot.setAttribute('fill', sel ? '#fff' : '#C4A96A');
+      svg.appendChild(dot);
+    });
 
     const lbl = document.createElement('div');
     lbl.className = 'med-label-el' + (sel ? ' selected-l' : '');
@@ -1802,25 +1798,21 @@ function renderShareMedidas(meds, wrap) {
 
   meds.forEach(m => {
     const mid = 'ms-' + m.id;
-    const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
-    defs.innerHTML = `
-      <marker id="${mid}-s" markerWidth="7" markerHeight="7" refX="3" refY="3.5" orient="auto">
-        <path d="M7,0 L0,3.5 L7,7" fill="none" stroke="#C4A96A" stroke-width="1.5"/>
-      </marker>
-      <marker id="${mid}-e" markerWidth="7" markerHeight="7" refX="4" refY="3.5" orient="auto-start-reverse">
-        <path d="M7,0 L0,3.5 L7,7" fill="none" stroke="#C4A96A" stroke-width="1.5"/>
-      </marker>`;
-    svg.appendChild(defs);
+
 
     const line = document.createElementNS('http://www.w3.org/2000/svg','line');
     line.setAttribute('x1', m.x1+'%'); line.setAttribute('y1', m.y1+'%');
     line.setAttribute('x2', m.x2+'%'); line.setAttribute('y2', m.y2+'%');
     line.setAttribute('stroke','#C4A96A');
-    line.setAttribute('stroke-width','1.8');
-    line.setAttribute('stroke-dasharray','5,3');
-    line.setAttribute('marker-start', `url(#${mid}-s)`);
-    line.setAttribute('marker-end',   `url(#${mid}-e)`);
+    line.setAttribute('stroke-width','1.5');
     svg.appendChild(line);
+    ['1','2'].forEach(p => {
+      const dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      dot.setAttribute('cx', (p==='1' ? m.x1 : m.x2) + '%');
+      dot.setAttribute('cy', (p==='1' ? m.y1 : m.y2) + '%');
+      dot.setAttribute('r','3'); dot.setAttribute('fill','#C4A96A');
+      svg.appendChild(dot);
+    });
   });
   wrap.appendChild(svg);
 
